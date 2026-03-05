@@ -1,0 +1,65 @@
+<!--会员中心-->
+<navigation-bar title="会员中心" back="{{true}}" color="white" background="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"></navigation-bar>
+
+<scroll-view class="container" scroll-y>
+  <!-- 会员卡片 -->
+  <view class="member-card">
+    <view class="card-bg"></view>
+    <view class="card-content">
+      <view class="member-info">
+        <view class="avatar-section">
+          <image class="avatar" src="{{userInfo.avatar_url || '/assets/images/default-avatar.png'}}" mode="aspectFill"></image>
+          <member-badge level="{{userInfo.member_level || 0}}" size="normal"></member-badge>
+        </view>
+        <view class="info-text">
+          <view class="nickname">{{userInfo.nickname || '未登录'}}</view>
+          <view class="member-status" wx:if="{{userInfo.member_level > 0}}">
+            <text>会员有效期至: {{memberInfo.expire_time || '永久'}}</text>
+          </view>
+          <view class="member-status" wx:else>
+            <text>还不是会员，立即升级享受更多权益</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 会员权益 -->
+  <view class="section">
+    <view class="section-header" bindtap="goBenefits">
+      <text class="section-title">会员权益</text>
+      <text class="section-more">查看全部 ></text>
+    </view>
+    <view class="benefits-list">
+      <view class="benefit-item">
+        <text class="benefit-icon">🎬</text>
+        <text class="benefit-text">高清视频播放</text>
+      </view>
+      <view class="benefit-item">
+        <text class="benefit-icon">📤</text>
+        <text class="benefit-text">更多发布数量</text>
+      </view>
+      <view class="benefit-item">
+        <text class="benefit-icon">⏱</text>
+        <text class="benefit-text">更长视频时长</text>
+      </view>
+      <view class="benefit-item">
+        <text class="benefit-icon">👑</text>
+        <text class="benefit-text">专属会员标识</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 升级会员 -->
+  <view class="section">
+    <button class="upgrade-btn" bindtap="goUpgrade">
+      {{userInfo.member_level > 0 ? '续费/升级会员' : '立即开通会员'}}
+    </button>
+  </view>
+</scroll-view>
+
+
+
+
+
+

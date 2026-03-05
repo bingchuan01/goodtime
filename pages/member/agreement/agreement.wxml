@@ -1,0 +1,8 @@
+<!-- 会员服务协议详情页 -->
+<navigation-bar title="会员服务协议" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<scroll-view class="container" scroll-y>
+  <view class="content-wrap">
+    <rich-text nodes="{{content}}"></rich-text>
+  </view>
+</scroll-view>

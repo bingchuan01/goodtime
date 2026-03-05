@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TabBar图标转换工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .icon-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .icon-preview {
+            width: 81px;
+            height: 81px;
+            border: 1px solid #ddd;
+            margin-right: 15px;
+        }
+        button {
+            background: #FF6B35;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #e55a2b;
+        }
+        .status {
+            margin-left: 15px;
+            color: #666;
+            font-size: 12px;
+        }
+        .success {
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TabBar图标转换工具</h1>
+        <p>点击按钮将SVG图标转换为PNG格式（81x81px）</p>
+        <div id="iconList"></div>
+        <div style="margin-top: 30px;">
+            <button onclick="convertAll()" style="background: #2196F3; padding: 15px 30px; font-size: 16px;">一键转换所有图标</button>
+        </div>
+    </div>
+
+    <script>
+        // SVG图标数据
+        const icons = [
+            { name: 'home', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="81" height="81" viewBox="0 0 81 81"><path d="M40.5 10L15 30V70H30V50H51V70H66V30L40.5 10Z" fill="#999999"/></svg>` },
+            { name: 'home-active', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="81" height="81" viewBox="0 0 81 81"><path d="M40.5 10L15 30V70H30V50H51V70H66V30L40.5 10Z" fill="#FF6B35"/></svg>` },
+            { name: 'handshake', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="81" height="81" viewBox="0 0 81 81"><path d="M25 45L35 35L30 30L40 20L50 30L45 35L55 45L50 50L40 40L30 50L25 45Z" fill="#999999" stroke="#999999" stroke-width="2"/><path d="M20 50L30 40L25 35L35 25L45 35L40 40L50 50L45 55L35 45L25 55L20 50Z" fill="#999999" stroke="#999999" stroke-width="2"/></svg>` },
+            { name: 'handshake-active', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="81" height="81" viewBox="0 0 81 81"><path d="M25 45L35 35L30 30L40 20L50 30L45 35L55 45L50 50L40 40L30 50L25 45Z" fill="#FF6B35" stroke="#FF6B35" stroke-width="2"/><path d="M20 50L30 40L25 35L35 25L45 35L40 40L50 50L45 55L35 45L25 55L20 50Z" fill="#FF6B35" stroke="#FF6B35" stroke-width="2"/></svg>` },
+            { name: 'publish', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="81" height="81" viewBox="0 0 81 81"><circle cx="40.5" cy="40.5" r="35" fill="#999999"/><path d="M40.5 25V55M25 40.5H55" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M40.5 20L45 30L55 35L45 40L40.5 50L36 40L26 35L36 30L40.5 20Z" fill="white" opacity="0.3"/></svg>` },
+            { name: 'publish-active', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="81" height="81" viewBox="0 0 81 81"><circle cx="40.5" cy="40.5" r="35" fill="#FF6B35"/><path d="M40.5 25V55M25 40.5H55" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M40.5 20L45 30L55 35L45 40L40.5 50L36 40L26 35L36 30L40.5 20Z" fill="white" opacity="0.3"/></svg>` },
+            { name: 'member', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="81" height="81" viewBox="0 0 81 81"><path d="M40.5 15L50 25L60 20L55 30L65 35L55 40L50 50L40.5 45L31 50L26 40L16 35L26 30L21 20L31 25L40.5 15Z" fill="#999999"/></svg>` },
+            { name: 'member-active', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="81" height="81" viewBox="0 0 81 81"><path d="M40.5 15L50 25L60 20L55 30L65 35L55 40L50 50L40.5 45L31 50L26 40L16 35L26 30L21 20L31 25L40.5 15Z" fill="#FF6B35"/></svg>` },
+            { name: 'user', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="81" height="81" viewBox="0 0 81 81"><circle cx="40.5" cy="25" r="12" fill="#999999"/><path d="M20 65C20 55 28 47 40.5 47C53 47 61 55 61 65" stroke="#999999" stroke-width="4" fill="none" stroke-linecap="round"/></svg>` },
+            { name: 'user-active', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="81" height="81" viewBox="0 0 81 81"><circle cx="40.5" cy="25" r="12" fill="#FF6B35"/><path d="M20 65C20 55 28 47 40.5 47C53 47 61 55 61 65" stroke="#FF6B35" stroke-width="4" fill="none" stroke-linecap="round"/></svg>` }
+        ];
+
+        // 渲染图标列表
+        function renderIcons() {
+            const list = document.getElementById('iconList');
+            icons.forEach((icon, index) => {
+                const div = document.createElement('div');
+                div.className = 'icon-item';
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center;">
+                        <div class="icon-preview" id="preview-${index}"></div>
+                        <div>
+                            <strong>${icon.name}.png</strong>
+                            <div class="status" id="status-${index}">未转换</div>
+                        </div>
+                    </div>
+                    <button onclick="convertIcon(${index})">转换</button>
+                `;
+                list.appendChild(div);
+                
+                // 显示预览
+                document.getElementById(`preview-${index}`).innerHTML = icon.svg;
+            });
+        }
+
+        // 转换单个图标
+        async function convertIcon(index) {
+            const icon = icons[index];
+            const statusEl = document.getElementById(`status-${index}`);
+            
+            try {
+                statusEl.textContent = '转换中...';
+                statusEl.className = 'status';
+                
+                // 创建canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = 81;
+                canvas.height = 81;
+                const ctx = canvas.getContext('2d');
+                
+                // 创建图片
+                const img = new Image();
+                const svgBlob = new Blob([icon.svg], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(svgBlob);
+                
+                await new Promise((resolve, reject) => {
+                    img.onload = () => {
+                        ctx.drawImage(img, 0, 0, 81, 81);
+                        URL.revokeObjectURL(url);
+                        resolve();
+                    };
+                    img.onerror = reject;
+                    img.src = url;
+                });
+                
+                // 转换为PNG并下载
+                canvas.toBlob((blob) => {
+                    const link = document.createElement('a');
+                    link.download = `${icon.name}.png`;
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                    
+                    statusEl.textContent = '✓ 已转换并下载';
+                    statusEl.className = 'status success';
+                }, 'image/png');
+                
+            } catch (error) {
+                statusEl.textContent = '✗ 转换失败: ' + error.message;
+                statusEl.className = 'status';
+                console.error(error);
+            }
+        }
+
+        // 转换所有图标
+        async function convertAll() {
+            for (let i = 0; i < icons.length; i++) {
+                await convertIcon(i);
+                await new Promise(resolve => setTimeout(resolve, 500)); // 延迟500ms避免浏览器阻止下载
+            }
+            alert('所有图标转换完成！请将下载的PNG文件保存到 images/tabbar/ 目录');
+        }
+
+        // 页面加载时渲染
+        window.onload = renderIcons;
+    </script>
+</body>
+</html>

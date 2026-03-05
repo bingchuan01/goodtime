@@ -1,0 +1,231 @@
+一、技术架构概述
+javascript
+小程序前端 → 微信服务器 → 后端API服务器 → 数据库
+二、核心实现步骤
+1. 前端准备上传数据
+javascript
+// 小程序端代码示例
+Page({
+  uploadContent: function() {
+    // 1. 获取表单数据
+    const formData = {
+      title: this.data.title,
+      content: this.data.content,
+      images: this.data.imageList
+    };
+    
+    // 2. 上传文件（如图片/视频）
+    this.uploadFiles(formData);
+  },
+  
+  uploadFiles: function(formData) {
+    // 多文件上传
+    const uploadTasks = formData.images.map((filePath, index) => {
+      return new Promise((resolve, reject) => {
+        wx.uploadFile({
+          url: 'https://api.yourserver.com/upload',
+          filePath: filePath,
+          name: 'file',
+          formData: {
+            index: index,
+            type: 'image'
+          },
+          success: (res) => {
+            const data = JSON.parse(res.data);
+            resolve(data.url); // 返回服务器文件地址
+          },
+          fail: reject
+        });
+      });
+    });
+    
+    // 3. 所有文件上传完成后提交表单
+    Promise.all(uploadTasks).then(fileUrls => {
+      this.submitFormData(formData, fileUrls);
+    });
+  },
+  
+  submitFormData: function(formData, fileUrls) {
+    // 4. 提交文本数据和文件地址到后端
+    wx.request({
+      url: 'https://api.yourserver.com/content/create',
+      method: 'POST',
+      header: {
+        'content-type': 'application/json',
+        'Authorization': `Bearer ${wx.getStorageSync('token')}`
+      },
+      data: {
+        ...formData,
+        images: fileUrls,
+        publishTime: new Date().toISOString()
+      },
+      success: (res) => {
+        if (res.data.code === 200) {
+          wx.showToast({ title: '发布成功' });
+        }
+      }
+    });
+  }
+});
+2. 后端API接口设计
+javascript
+// Node.js + Express 示例
+const express = require('express');
+const multer = require('multer');
+const app = express();
+
+// 文件上传配置
+const storage = multer.diskStorage({
+  destination: 'uploads/',
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage });
+
+// 文件上传接口
+app.post('/upload', upload.single('file'), (req, res) => {
+  // 返回文件访问地址
+  res.json({
+    url: `https://cdn.yourserver.com/${req.file.filename}`,
+    size: req.file.size,
+    type: req.file.mimetype
+  });
+});
+
+// 内容创建接口
+app.post('/content/create', verifyToken, async (req, res) => {
+  try {
+    const { title, content, images } = req.body;
+    
+    // 1. 数据验证
+    if (!title || !content) {
+      return res.status(400).json({ code: 400, message: '标题和内容必填' });
+    }
+    
+    // 2. 敏感词过滤
+    const filteredContent = filterSensitiveWords(content);
+    
+    // 3. 保存到数据库
+    const result = await db.collection('contents').insertOne({
+      title,
+      content: filteredContent,
+      images,
+      authorId: req.user.id,
+      status: 'pending', // 审核状态
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    // 4. 触发审核流程
+    triggerReview(result.insertedId);
+    
+    res.json({ 
+      code: 200, 
+      message: '提交成功，等待审核',
+      data: { id: result.insertedId }
+    });
+  } catch (error) {
+    res.status(500).json({ code: 500, message: '服务器错误' });
+  }
+});
+3. 数据审核流程
+javascript
+// 审核状态机
+const reviewProcess = {
+  states: {
+    pending: '待审核',
+    reviewing: '审核中',
+    approved: '已通过',
+    rejected: '已驳回'
+  },
+  
+  // 后台管理审核接口
+  reviewContent: async (contentId, action, reason) => {
+    const status = action === 'approve' ? 'approved' : 'rejected';
+    
+    await db.collection('contents').updateOne(
+      { _id: contentId },
+      { 
+        $set: { 
+          status,
+          reviewTime: new Date(),
+          reviewer: currentAdmin.id,
+          rejectReason: action === 'reject' ? reason : null
+        }
+      }
+    );
+    
+    // 通知发布者
+    if (status === 'approved') {
+      sendNotification(content.authorId, '您的内容已通过审核');
+    }
+  }
+};
+三、完整流程图
+text
+用户提交
+    ↓
+前端验证（必填项、格式）
+    ↓
+文件上传 → CDN存储
+    ↓
+提交元数据 → 后端API
+    ↓
+数据清洗（去重、格式化）
+    ↓
+敏感词过滤
+    ↓
+保存数据库（待审核状态）
+    ↓
+触发审核通知
+    ↓
+管理员后台审核
+    ↓
+通过/驳回
+    ↓
+通知用户结果
+四、关键安全措施
+1. 接口安全
+javascript
+// JWT Token验证中间件
+const verifyToken = (req, res, next) => {
+  const token = req.header('Authorization');
+  if (!token) return res.status(401).json({ code: 401, message: '未授权' });
+  
+  try {
+    const decoded = jwt.verify(token.split(' ')[1], SECRET_KEY);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ code: 401, message: 'Token无效' });
+  }
+};
+2. 文件安全
+javascript
+// 文件类型和大小限制
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+    files: 9 // 最多9个文件
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('文件类型不支持'));
+    }
+  }
+});
+3. 防刷策略
+javascript
+// 频率限制
+const rateLimit = require('express-rate-limit');
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15分钟
+  max: 100, // 最多100次请求
+  message: { code: 429, message: '请求过于频繁' }
+});
+app.use('/api/content/create', limiter);

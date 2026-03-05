@@ -1,0 +1,112 @@
+.columnstest {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  width: 756px;
+  height:500px;
+  margin: 0 auto;
+}
+
+.columntest h3 {
+  color: white;
+  font-weight: 30px;
+}
+
+.columntest p {
+  font-family: 'Roboto', sans-serif;
+  color: white;
+}
+
+.columntest {
+  flex: 1;
+}
+
+.bgColor {
+  background-color: #C32F4B;
+  width: fit-content;
+}
+
+.container {
+    padding: 12px 24px 24px 24px;
+    margin: 48px 12px;
+    border-radius: 4px;
+    width:200px;
+    height:400px;
+}
+
+/* Add styles to 'label' selector */
+
+label {
+    font-size: 0.85em;
+    margin-left: 12px;
+}
+
+/* Add styles to 'input' and 'textarea' selectors */
+
+input[type=text], input[type=email], textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    margin-top: 6px;
+    margin-bottom: 16px;
+    resize: vertical;
+}
+
+/* Add styles to show 'focus' of selector */
+
+input[type=text]:focus, input[type=email]:focus, textarea:focus {
+    border: 1px solid green;
+}
+
+/* Add styles to the submit button */
+
+input[type=submit] {
+    background: #C32F4B;
+    margin: 0 auto;
+    outline: 0;
+    color: white;
+    border: solid 1px white;
+    padding: 12px 24px;
+    border-radius: 4px;
+    transition: all ease-in-out 0.1s;
+    position: relative;
+    display: inline-block;
+    text-align: center;
+}
+
+/* Add styles for 'focus' property */
+
+input[type=submit]:focus {
+    background: #A5D6A7;
+    color: whitesmoke;
+}
+
+/* Style 'hover' property */
+
+input[type=submit]:hover {
+    background: #2196F3;
+}
+
+/* Align items to center of the 'div' with the class 'center' */
+.center {
+    text-align: center;
+}
+
+/* label color */
+label {
+    color: white;
+}
+
+/* tel part */
+input[type=tel], textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    margin-top: 6px;
+    margin-bottom: 16px;
+    resize: vertical;
+}

@@ -1,10 +1,67 @@
 {
   "pages": [
-    "pages/index/index"
+    "pages/index/index",
+    "pages/consult/consult",
+    "pages/publish/publish",
+    "pages/member/benefits/benefits",
+    "pages/user/profile/profile",
+    "pages/video-detail/video-detail",
+    "pages/message-list/message-list",
+    "pages/message-detail/message-detail",
+    "pages/message-compose/message-compose",
+    "pages/login/login",
+    "pages/password-login/password-login",
+    "pages/forgot-password/forgot-password",
+    "pages/member/upgrade/upgrade",
+    "pages/member/benefits-doc/benefits-doc",
+    "pages/member/agreement/agreement",
+    "pages/search/search",
+    "pages/user/profile-edit/profile-edit",
+    "pages/user/settings/settings",
+    "pages/user/change-password/change-password",
+    "pages/user/doc/doc","pages/user/videos/videos"
   ],
   "window": {
     "navigationBarTextStyle": "black",
     "navigationStyle": "custom"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#FF6B35",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/tabbar/home.png",
+        "selectedIconPath": "images/tabbar/home-active.png"
+      },
+      {
+        "pagePath": "pages/consult/consult",
+        "text": "合作",
+        "iconPath": "images/tabbar/handshake.png",
+        "selectedIconPath": "images/tabbar/handshake-active.png"
+      },
+      {
+        "pagePath": "pages/publish/publish",
+        "text": "发布",
+        "iconPath": "images/tabbar/publish.png",
+        "selectedIconPath": "images/tabbar/publish-active.png"
+      },
+      {
+        "pagePath": "pages/member/benefits/benefits",
+        "text": "会员",
+        "iconPath": "images/tabbar/member.png",
+        "selectedIconPath": "images/tabbar/member-active.png"
+      },
+      {
+        "pagePath": "pages/user/profile/profile",
+        "text": "我的",
+        "iconPath": "images/tabbar/user.png",
+        "selectedIconPath": "images/tabbar/user-active.png"
+      }
+    ]
   },
   "style": "v2",
   "renderer": "skyline",
@@ -12,7 +69,6 @@
     "skyline": {
       "defaultDisplayBlock": true,
       "defaultContentBox": true,
-      "tagNameStyleIsolation": "legacy",
       "disableABTest": true,
       "sdkVersionBegin": "3.0.0",
       "sdkVersionEnd": "15.255.255"

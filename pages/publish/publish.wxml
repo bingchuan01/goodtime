@@ -1,0 +1,315 @@
+<!--项目发布页-->
+<navigation-bar title="选择发布类型" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<scroll-view class="container" scroll-y="true">
+  <!-- 发布类型选择 -->
+  <view class="publish-type-tabs">
+    <view 
+      class="tab-item {{publishType === 'flash' ? 'active' : ''}}"
+      data-type="flash"
+      bindtap="onPublishTypeChange"
+    >
+      <text>闪电发布</text>
+    </view>
+    <view 
+      class="tab-item {{publishType === 'advanced' ? 'active' : ''}}"
+      data-type="advanced"
+      bindtap="onPublishTypeChange"
+    >
+      <text>高级发布</text>
+    </view>
+  </view>
+
+  <!-- V8高级发布：上传方式选择 -->
+  <view class="section" wx:if="{{publishType === 'advanced'}}">
+    <view class="section-title">选择上传方式</view>
+    <view class="upload-type-tabs">
+      <view 
+        class="upload-tab {{uploadType === 'carousel' ? 'active' : ''}}"
+        data-type="carousel"
+        bindtap="onUploadTypeChange"
+      >
+        <text>轮播图</text>
+      </view>
+      <view 
+        class="upload-tab {{uploadType === 'video' ? 'active' : ''}}"
+        data-type="video"
+        bindtap="onUploadTypeChange"
+      >
+        <text>短视频</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 轮播图上传区域 -->
+  <view class="section" wx:if="{{publishType === 'flash' || (publishType === 'advanced' && uploadType === 'carousel')}}">
+    <view class="section-title">
+      <text class="required">*</text>
+      <text>轮播图</text>
+    </view>
+    <view class="section-desc">可传3张JPG / JPEG / PNG,图片,比例 16:9(750*422px)</view>
+    
+    <view class="carousel-upload-area">
+      <!-- 已上传的图片 -->
+      <view class="carousel-item" wx:for="{{carouselImages}}" wx:key="index">
+        <image class="carousel-image" src="{{item}}" mode="aspectFill"></image>
+        <view class="carousel-actions">
+          <view 
+            class="action-btn {{carouselCoverIndex === index ? 'active' : ''}}"
+            data-index="{{index}}"
+            bindtap="setCarouselCover"
+          >
+            <text wx:if="{{carouselCoverIndex === index}}">修改封面</text>
+            <text wx:else>设为封面</text>
+          </view>
+          <view class="action-btn delete" data-index="{{index}}" bindtap="deleteCarouselImage">
+            <text>删除</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 上传按钮 -->
+      <view 
+        class="carousel-item upload-btn" 
+        wx:if="{{carouselImages.length < 3}}"
+        bindtap="chooseCarouselImages"
+      >
+        <view class="upload-icon">+</view>
+        <text class="upload-text">上传图片</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 视频上传区域（V8高级发布） -->
+  <view class="section" wx:if="{{publishType === 'advanced' && uploadType === 'video'}}">
+    <view class="section-title">
+      <text class="required">*</text>
+      <text>轮播图 / 短视频</text>
+    </view>
+    <view class="section-desc">支持MP4、AVI格式，最长60秒，最大50MB</view>
+    
+    <view class="video-upload-area">
+      <!-- 视频上传按钮 -->
+      <view wx:if="{{!videoPath}}" class="video-upload-btn" bindtap="chooseVideo">
+        <view class="upload-icon">+</view>
+        <text class="upload-text">上传视频</text>
+      </view>
+      
+      <!-- 视频预览 -->
+      <view wx:else class="video-preview">
+        <video class="preview-video" src="{{videoPath}}" poster="{{videoCoverPath}}" controls></video>
+        <view class="video-info">
+          <text>时长: {{formatVideoDuration(videoDuration)}}</text>
+        </view>
+        <view class="video-actions">
+          <button class="btn-small" bindtap="chooseVideo">重新选择</button>
+        </view>
+      </view>
+      
+      <!-- 修改封面 -->
+      <view wx:if="{{videoPath}}" class="cover-modify-area">
+        <view class="cover-preview" bindtap="modifyVideoCover">
+          <image wx:if="{{videoCoverPath}}" class="cover-image" src="{{videoCoverPath}}" mode="aspectFill"></image>
+          <view wx:else class="cover-placeholder">
+            <text>点击选择封面</text>
+          </view>
+        </view>
+        <view class="cover-label">修改封面</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 标题 -->
+  <view class="section">
+    <view class="section-title">
+      <text class="required">*</text>
+      <text>标题</text>
+    </view>
+    <view class="section-desc">通常一个好的标题不超过20字</view>
+    <input 
+      class="form-input" 
+      placeholder="请输入标题" 
+      value="{{title}}"
+      bindinput="onTitleInput"
+      maxlength="20"
+    />
+  </view>
+
+  <!-- 介绍 -->
+  <view class="section">
+    <view class="section-title">
+      <text>介绍</text>
+    </view>
+    <view class="section-desc">请输入项目介绍（选填）</view>
+    <textarea 
+      class="form-textarea" 
+      placeholder="请输入项目介绍" 
+      value="{{introduction}}"
+      bindinput="onIntroductionInput"
+      maxlength="500"
+      auto-height="{{true}}"
+    />
+  </view>
+
+  <!-- 项目分类标签 -->
+  <view class="section">
+    <view class="section-title">
+      <text class="required">*</text>
+      <text>项目分类标签</text>
+    </view>
+    <view class="category-selector" bindtap="chooseCategory">
+      <view wx:if="{{categoryTag}}" class="category-tag-selected">
+        <text>{{categoryTag}}</text>
+      </view>
+      <view wx:else class="category-placeholder">
+        <text>请选择项目分类</text>
+      </view>
+      <text class="arrow-icon">></text>
+    </view>
+  </view>
+
+  <!-- 门店 -->
+  <view class="section section-store-ip">
+    <view class="section-title">
+      <text class="required">*</text>
+      <text>门店</text>
+    </view>
+    <input 
+      class="form-input" 
+      type="number"
+      placeholder="请输入当前项目已有门店数量（2-5000）" 
+      value="{{storeCount}}"
+      bindinput="onStoreCountInput"
+    />
+  </view>
+
+  <!-- IP地址 -->
+  <view class="section section-store-ip">
+    <view class="section-title">
+      <text class="required">*</text>
+      <text>IP</text>
+    </view>
+    <input 
+      class="form-input form-input-ip"
+      placeholder="请输入项目总部所在城市，最多支持6个中文" 
+      value="{{ipAddress}}"
+      maxlength="6"
+      bindinput="onIpAddressInput"
+    />
+  </view>
+
+  <!-- 合作金额 -->
+  <view class="section">
+    <view class="section-title">
+      <text class="required">*</text>
+      <text>合作金额</text>
+    </view>
+    <view class="section-desc">请输入基本价与最高价(单位:万)</view>
+    <view class="amount-row">
+      <input 
+        class="amount-input" 
+        type="digit"
+        placeholder="基本额" 
+        value="{{baseAmount}}"
+        bindinput="onBaseAmountInput"
+      />
+      <text class="amount-unit">万</text>
+      <text class="amount-separator">></text>
+      <input 
+        class="amount-input" 
+        type="digit"
+        placeholder="最大额" 
+        value="{{maxAmount}}"
+        bindinput="onMaxAmountInput"
+      />
+      <text class="amount-unit">万</text>
+    </view>
+  </view>
+
+  <!-- 上传详情页 -->
+  <view class="section">
+    <view class="section-title">
+      <text class="required">*</text>
+      <text>上传详情页</text>
+    </view>
+    <view class="section-desc">最大支持9张图,规格为3M以内,宽度建议750px以上</view>
+    
+    <view class="detail-images-grid">
+      <view class="detail-image-item" wx:for="{{detailImages}}" wx:key="index">
+        <image class="detail-image" src="{{item}}" mode="aspectFill"></image>
+        <view class="delete-icon" data-index="{{index}}" bindtap="deleteDetailImage">×</view>
+      </view>
+      <view 
+        class="detail-image-item upload-item" 
+        wx:if="{{detailImages.length < 9}}"
+        bindtap="chooseDetailImages"
+      >
+        <view class="upload-icon-small">+</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 入驻协议签字盖章上传 -->
+  <view class="section">
+    <view class="section-title">
+      <text class="required">*</text>
+      <text>入驻协议签字盖章上传</text>
+    </view>
+    <view class="section-desc">
+      <text class="link-text" bindtap="copyAgreementLink">复制协议下载地址</text>
+      <text> (支持手机/PC端下载)</text>
+    </view>
+    
+    <view class="agreement-upload-area">
+      <view wx:if="{{!agreementImage}}" class="agreement-upload-btn" bindtap="chooseAgreementImage">
+        <view class="upload-icon">+</view>
+        <text class="upload-text">上传协议</text>
+      </view>
+      <view wx:else class="agreement-preview">
+        <image class="agreement-image" src="{{agreementImage}}" mode="aspectFit"></image>
+        <view class="agreement-actions">
+          <button class="btn-small" bindtap="chooseAgreementImage">重新上传</button>
+          <button class="btn-small delete" bindtap="deleteAgreementImage">删除</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</scroll-view>
+
+<!-- 底部提交按钮 -->
+<view class="footer">
+  <button 
+    type="default"
+    class="submit-btn" 
+    catchtap="submitReview"
+    disabled="{{uploading}}"
+    loading="{{uploading}}"
+  >
+    {{uploading ? '提交中...' : '提交审核'}}
+  </button>
+</view>
+
+<!-- 项目分类选择器弹窗 -->
+<view wx:if="{{showCategoryPicker}}" class="category-picker-modal" bindtap="closeCategoryPicker">
+  <view class="category-picker-content" catchtap="">
+    <!-- 弹窗头部 -->
+    <view class="picker-header">
+      <text class="picker-cancel" bindtap="closeCategoryPicker">取消</text>
+      <text class="picker-title">选择分类</text>
+      <text class="picker-confirm" bindtap="closeCategoryPicker">完成</text>
+    </view>
+    
+    <!-- 分类列表 -->
+    <scroll-view class="picker-list" scroll-y="true">
+      <view 
+        class="picker-item {{categoryTagId === item.id ? 'selected' : ''}}"
+        wx:for="{{categoryList}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="confirmCategory"
+      >
+        <text>{{item.name}}</text>
+      </view>
+    </scroll-view>
+  </view>
+</view>

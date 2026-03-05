@@ -1,0 +1,48 @@
+<!--站内信列表页，与首页风格一致-->
+<navigation-bar title="站内信" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+<scroll-view
+  class="scrollarea"
+  scroll-y="true"
+  refresher-enabled="{{true}}"
+  refresher-triggered="{{refreshing}}"
+  bindrefresherrefresh="onRefresh"
+  bindscrolltolower="onLoadMore"
+>
+  <header-logo logo-url="/images/hsjlogo.png"></header-logo>
+
+  <view class="compose-bar">
+    <view class="compose-btn" bindtap="onCompose">写站内信</view>
+  </view>
+
+  <view class="list-section">
+    <view
+      wx:for="{{list}}"
+      wx:key="id"
+      class="msg-card"
+      data-id="{{item.id}}"
+      bindtap="onItemTap"
+      bindlongpress="onItemLongPress"
+    >
+      <image class="avatar" src="{{item.sender.avatar}}" mode="aspectFill"></image>
+      <view class="main">
+        <view class="row">
+          <text class="name">{{item.sender.nickname}}</text>
+          <text class="time">{{item.sentAt}}</text>
+        </view>
+        <text class="subject">{{item.subject}}</text>
+        <text class="preview">{{item.bodyPreview}}</text>
+      </view>
+      <view wx:if="{{!item.isRead}}" class="dot"></view>
+    </view>
+  </view>
+
+  <view class="loading-more" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+  <view class="no-more" wx:if="{{!hasMore && list.length > 0}}">
+    <text>没有更多了</text>
+  </view>
+  <view class="empty" wx:if="{{!loading && list.length === 0}}">
+    <text>暂无站内信</text>
+  </view>
+</scroll-view>

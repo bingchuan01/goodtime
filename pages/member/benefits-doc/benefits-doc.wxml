@@ -1,0 +1,8 @@
+<!-- 权益说明页：官方后台编辑具体权益说明 -->
+<navigation-bar title="权益说明" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<scroll-view class="container" scroll-y>
+  <view class="content-wrap">
+    <rich-text nodes="{{content}}"></rich-text>
+  </view>
+</scroll-view>

@@ -1,0 +1,24 @@
+page {
+  background-color: #fff;
+}
+
+.container {
+  height: 100vh;
+  padding-top: var(--status-bar-height, 44rpx);
+  padding-bottom: 60rpx;
+}
+
+.content-wrap {
+  padding: 30rpx;
+  font-size: 28rpx;
+  line-height: 1.8;
+  color: #333;
+}
+
+.content-wrap p {
+  margin-bottom: 24rpx;
+}
+
+.content-wrap strong {
+  font-weight: bold;
+}

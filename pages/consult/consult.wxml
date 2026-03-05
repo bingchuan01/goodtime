@@ -1,0 +1,38 @@
+<!--咨询合作：用户向官方发送站内信，收件人固定为官方-->
+<navigation-bar title="咨询合作" back="{{false}}" color="black" background="#FFF"></navigation-bar>
+<view class="page-wrap">
+  <view class="hint">您的留言将发送给官方，我们会在后台及时查看并回复。</view>
+  <view class="form-card">
+    <view class="form-item">
+      <text class="label">主题</text>
+      <input
+        class="input"
+        placeholder="请输入主题"
+        value="{{subject}}"
+        bindinput="onSubjectInput"
+      />
+    </view>
+    <view class="form-item">
+      <text class="label">正文</text>
+      <textarea
+        class="textarea"
+        placeholder="请描述您的咨询或合作意向"
+        value="{{body}}"
+        bindinput="onBodyInput"
+        maxlength="-1"
+      />
+    </view>
+    <view class="form-item">
+      <text class="label">联系方式</text>
+      <input
+        class="input"
+        placeholder="请输入手机号、微信号或邮箱等"
+        value="{{contact}}"
+        bindinput="onContactInput"
+      />
+    </view>
+  </view>
+  <view class="submit-wrap">
+    <view class="submit-btn" bindtap="onSubmit">发送给官方</view>
+  </view>
+</view>

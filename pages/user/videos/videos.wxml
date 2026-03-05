@@ -1,0 +1,52 @@
+<!--我的发布（项目管理）-->
+<navigation-bar title="我的发布" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<view class="status-tabs">
+  <view
+    wx:for="{{statusTabs}}"
+    wx:key="key"
+    class="tab {{statusFilter === item.key ? 'active' : ''}}"
+    data-key="{{item.key}}"
+    bindtap="onStatusTab"
+  >
+    <text>{{item.label}}</text>
+  </view>
+</view>
+
+<scroll-view class="container" scroll-y bindscrolltolower="onReachBottom">
+  <view class="project-list">
+    <view
+      class="project-item {{item.status === 'approved' ? 'clickable' : ''}}"
+      wx:for="{{list}}"
+      wx:key="id"
+      data-item="{{item}}"
+      bindtap="onItemTap"
+    >
+      <view class="cover-wrap">
+        <image class="cover" src="{{item.coverUrl || '/images/icons/default-avatar.svg'}}" mode="aspectFill"></image>
+        <view class="status-tag status-{{item.status}}">{{item.statusText}}</view>
+      </view>
+      <view class="info">
+        <view class="title">{{item.title}}</view>
+        <view class="meta">{{formatTime(item.createdAt || item.created_at)}}</view>
+        <view class="reject-reason" wx:if="{{item.status === 'rejected' && item.rejectReason}}">
+          <text class="reason-label">退回原因：</text><text class="reason-text">{{item.rejectReason}}</text>
+        </view>
+        <view class="actions">
+          <button wx:if="{{item.status === 'rejected'}}" class="btn-edit" data-id="{{item.id}}" bindtap="onEdit" catchtap="onEdit">编辑</button>
+          <view wx:if="{{item.status === 'approved'}}" class="link-tip">点击查看详情</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+  <view class="no-more" wx:if="{{!hasMore && list.length > 0}}">
+    <text>没有更多了</text>
+  </view>
+  <view class="empty" wx:if="{{!loading && list.length === 0}}">
+    <text>{{statusFilter ? '暂无该状态的发布' : '还没有发布项目'}}</text>
+  </view>
+</scroll-view>

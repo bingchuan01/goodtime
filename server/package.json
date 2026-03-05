@@ -1,0 +1,17 @@
+{
+  "name": "goodtime-message-api",
+  "version": "1.0.0",
+  "description": "站内信后端 API（参考文档：messages + user_message_status）",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "simulate-publish": "node simulate-mobile-publish.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "multer": "^1.4.5-lts.1",
+    "sql.js": "^1.11.0"
+  }
+}

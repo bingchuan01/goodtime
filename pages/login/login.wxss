@@ -1,0 +1,225 @@
+/**login.wxss**/
+page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f5f5;
+}
+
+.scrollarea {
+  flex: 1;
+  height: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.welcome-text {
+  text-align: center;
+  font-size: 28rpx;
+  color: #999;
+  padding: 15rpx 0 20rpx;
+  background-color: #fff;
+}
+
+.container {
+  width: calc(100% - 80rpx);
+  padding: 20rpx 0 40rpx;
+  margin: 0 40rpx;
+  background-color: #f5f5f5;
+}
+
+/* 页面标题 */
+.page-title {
+  text-align: center;
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15rpx;
+}
+
+.title-divider {
+  height: 1rpx;
+  background-color: #e0e0e0;
+  margin-bottom: 25rpx;
+}
+
+/* 表单容器 */
+.form-container {
+  width: calc(100% - 80rpx);
+  background-color: #fff;
+  border-radius: 12rpx;
+  padding: 30rpx 40rpx;
+  margin: 0 40rpx 20rpx;
+  box-sizing: border-box;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30rpx;
+  background-color: #f8f8f8;
+  border-radius: 8rpx;
+  padding: 0 24rpx;
+  height: 88rpx;
+}
+
+.code-input-group {
+  position: relative;
+}
+
+.input-label {
+  font-size: 28rpx;
+  color: #333;
+  margin-right: 20rpx;
+  min-width: 80rpx;
+  flex-shrink: 0;
+}
+
+.input {
+  flex: 1;
+  height: 88rpx;
+  font-size: 28rpx;
+  color: #333;
+  min-width: 0;
+}
+
+.code-input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 160rpx;
+  box-sizing: border-box;
+}
+
+.input::placeholder {
+  color: #999;
+}
+
+.code-btn-text {
+  position: absolute;
+  right: 24rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24rpx;
+  color: #FF6B35;
+  white-space: nowrap;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.code-btn-text.disabled {
+  color: #999;
+}
+
+.submit-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  background-color: #FF6B35 !important;
+  color: #fff !important;
+  border-radius: 8rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-top: 20rpx;
+  border: none;
+}
+
+.submit-btn::after {
+  border: none;
+}
+
+.submit-btn[disabled] {
+  background-color: #ccc !important;
+  color: #999 !important;
+}
+
+/* 切换登录方式 */
+.switch-login {
+  text-align: center;
+  margin: 30rpx 0;
+}
+
+.switch-link {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 微信登录按钮 */
+.wx-login-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  background-color: #07c160 !important;
+  color: #fff !important;
+  border-radius: 8rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20rpx;
+  border: none;
+}
+
+.wx-login-btn::after {
+  border: none;
+}
+
+.wx-login-btn[disabled] {
+  background-color: #ccc !important;
+  color: #999 !important;
+}
+
+.wx-icon-text {
+  font-size: 36rpx;
+  margin-right: 10rpx;
+}
+
+/* 协议区域 */
+.agreement-section {
+  width: calc(100% - 80rpx);
+  padding: 15rpx 40rpx 30rpx;
+  margin: 0 40rpx;
+  text-align: left;
+  margin-bottom: env(safe-area-inset-bottom);
+  box-sizing: border-box;
+}
+
+.agreement-label {
+  display: flex;
+  align-items: flex-start;
+  font-size: 24rpx;
+  color: #666;
+  line-height: 1.8;
+  padding: 0;
+}
+
+.agreement-checkbox {
+  flex-shrink: 0;
+  margin-right: 12rpx;
+  margin-top: 4rpx;
+}
+
+.agreement-content {
+  flex: 1;
+  min-width: 0;
+  word-wrap: break-word;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+.agreement-text {
+  color: #666;
+  display: inline;
+  line-height: 1.8;
+}
+
+.link {
+  color: #1890ff;
+  text-decoration: underline;
+}
+
+
+
+
+
+

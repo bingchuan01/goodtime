@@ -1,0 +1,482 @@
+/* 项目详情页样式 */
+.page-container {
+  min-height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden;
+  background-color: #f5f5f5;
+  box-sizing: border-box;
+}
+
+.scroll-container {
+  height: 100vh;
+  padding-top: var(--status-bar-height, 44rpx);
+  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* 顶部媒体区域 */
+.top-media-section {
+  position: relative;
+  width: 100%;
+  background-color: #000;
+}
+
+/* 轮播图样式 */
+.carousel-wrapper {
+  width: 100%;
+  height: 422rpx;
+  background-color: #000;
+}
+
+.carousel-swiper {
+  width: 100%;
+  height: 100%;
+}
+
+.carousel-image {
+  width: 100%;
+  height: 100%;
+}
+
+/* 视频播放器样式 */
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  height: 422rpx;
+  background-color: #000;
+}
+
+.project-video {
+  width: 100%;
+  height: 100%;
+}
+
+/* 视频水印（平台logo，右上角，白色，小于首页LOGO） */
+.video-watermark {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  z-index: 10;
+  width: 80rpx;
+  height: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-watermark {
+  width: 100%;
+  height: 100%;
+  filter: brightness(0) invert(1); /* 将LOGO转换为白色 */
+}
+
+
+/* 详情模块 */
+.detail-section {
+  background-color: #fff;
+  padding: 30rpx;
+}
+
+/* 详情标题和私信按钮 */
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.detail-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.message-btn {
+  background-color: #FF6B35;
+  color: #fff;
+  padding: 12rpx 24rpx;
+  border-radius: 20rpx;
+  font-size: 26rpx;
+}
+
+/* 发布者信息 */
+.publisher-info {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 30rpx;
+}
+
+.publisher-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+.publisher-details {
+  flex: 1;
+}
+
+.publisher-name-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.publisher-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-right: 12rpx;
+}
+
+/* 会员标签 */
+.member-badge {
+  padding: 4rpx 12rpx;
+  border-radius: 4rpx;
+  font-size: 22rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-right: 12rpx;
+}
+
+.member-V6 {
+  background-color: #FF6B35;
+}
+
+.member-V8 {
+  background-color: #FFD700;
+  color: #333;
+}
+
+/* 金盾认证标签 */
+.official-badge {
+  padding: 4rpx 12rpx;
+  border-radius: 4rpx;
+  font-size: 22rpx;
+  background-color: #FFD700;
+  color: #333;
+  font-weight: bold;
+}
+
+.publisher-meta {
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.publisher-ip {
+  margin-right: 12rpx;
+}
+
+.category-tag {
+  color: #FF6B35;
+  border: 1px solid #FF6B35;
+  padding: 4rpx 12rpx;
+  border-radius: 4rpx;
+  font-size: 22rpx;
+}
+
+/* 项目标题区域 */
+.project-title-section {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 30rpx;
+}
+
+.publish-type-icon {
+  margin-right: 12rpx;
+  flex-shrink: 0;
+}
+
+.lightning-icon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.v8-icon {
+  width: 50rpx;
+  height: 50rpx;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  color: #333;
+  font-size: 28rpx;
+  font-weight: bold;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2rpx 8rpx rgba(255, 215, 0, 0.3);
+}
+
+.project-title {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* 介绍 */
+.project-introduction {
+  margin-bottom: 30rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.introduction-text {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.8;
+  display: block;
+}
+
+/* 数据指标 */
+.data-stats {
+  display: flex;
+  align-items: center;
+  padding-top: 30rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 60rpx;
+}
+
+.stat-value {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 详情页长页面区域 */
+.detail-content-section {
+  background-color: #fff;
+  margin-top: 20rpx;
+  min-height: 400rpx;
+  position: relative;
+}
+
+.detail-content-wrapper {
+  position: relative;
+  padding: 30rpx;
+}
+
+.detail-content {
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.8;
+  padding-bottom: 200rpx; /* 为合作咨询按钮留出空间 */
+}
+
+.detail-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 30rpx;
+  color: #999;
+  font-size: 28rpx;
+  text-align: center;
+}
+
+.placeholder-desc {
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  color: #ccc;
+}
+
+/* 合作咨询按钮（右侧居中，非固定，随页面滚动） */
+.consult-button-wrapper {
+  position: absolute;
+  right: 30rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  pointer-events: auto; /* 确保可以点击 */
+}
+
+.consult-button {
+  background-color: #FF6B35;
+  color: #fff;
+  padding: 20rpx 30rpx;
+  border-radius: 40rpx;
+  font-size: 26rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 53, 0.3);
+  white-space: nowrap;
+}
+
+/* 底部操作区域 */
+.bottom-action-section {
+  background-color: #fff;
+  padding: 30rpx;
+  margin-top: 20rpx;
+  padding-bottom: calc(30rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.get-material-btn {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background-color: #FF6B35;
+  color: #fff;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+/* 表单弹窗 */
+.form-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.form-content {
+  width: 100%;
+  background-color: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  max-height: 80vh;
+  animation: slideUp 0.3s;
+  padding-bottom: calc(env(safe-area-inset-bottom));
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.form-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.form-close {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+  color: #999;
+}
+
+.form-body {
+  padding: 30rpx;
+}
+
+.form-item {
+  margin-bottom: 30rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.form-input {
+  width: 100%;
+  height: 80rpx;
+  background-color: #f5f5f5;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+/* 保障信息 */
+.form-security {
+  display: flex;
+  align-items: center;
+  margin-top: 20rpx;
+  padding: 20rpx 0;
+}
+
+.security-item {
+  display: flex;
+  align-items: center;
+  margin-right: 40rpx;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.security-icon {
+  width: 32rpx;
+  height: 32rpx;
+  background-color: #4CAF50;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
+  margin-right: 8rpx;
+}
+
+.security-text {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.form-footer {
+  padding: 30rpx;
+  padding-top: 0;
+}
+
+.submit-btn {
+  width: 100%;
+  background-color: #FF6B35;
+  color: #fff;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: bold;
+}

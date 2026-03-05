@@ -1,0 +1,22 @@
+<!--站内信详情页，与首页风格一致-->
+<navigation-bar title="站内信详情" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+<view class="page-wrap" wx:if="{{msg}}">
+  <view class="card sender-card">
+    <image class="avatar" src="{{msg.sender.avatar}}" mode="aspectFill" binderror="onAvatarError"></image>
+    <view class="meta">
+      <text class="name">{{msg.sender.nickname}}</text>
+      <text class="time">{{msg.sentAt}}</text>
+    </view>
+  </view>
+  <view class="card content-card">
+    <text class="subject">{{msg.subject}}</text>
+    <text class="body">{{msg.body}}</text>
+  </view>
+  <view class="actions">
+    <view class="btn primary" bindtap="onReply">写站内信</view>
+    <view class="btn danger" bindtap="onDelete">删除</view>
+  </view>
+</view>
+<view class="loading-wrap" wx:if="{{loading}}">
+  <text>加载中...</text>
+</view>

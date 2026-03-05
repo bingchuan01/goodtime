@@ -1,0 +1,120 @@
+<!-- 搜索页 -->
+<navigation-bar title="搜索" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<scroll-view class="search-page" scroll-y>
+  <!-- 搜索输入框 -->
+  <view class="search-input-bar">
+    <view class="input-wrap">
+      <input
+        class="search-input"
+        placeholder="输入标题、品牌、行业关键词"
+        value="{{keyword}}"
+        bindinput="onInput"
+        bindfocus="onFocus"
+        bindblur="onBlur"
+        confirm-type="search"
+        bindconfirm="onSearch"
+      />
+      <text wx:if="{{keyword}}" class="clear-btn" bindtap="onClearKeyword">×</text>
+    </view>
+    <view class="search-btn" bindtap="onSearch">搜索</view>
+  </view>
+
+  <!-- 智能联想 -->
+  <view class="suggestion-panel" wx:if="{{showSuggestions && suggestions.length > 0}}">
+    <view
+      class="suggestion-item"
+      wx:for="{{suggestions}}"
+      wx:key="*this"
+      data-word="{{item}}"
+      bindtap="onSuggestionTap"
+    >{{item}}</view>
+  </view>
+
+  <!-- 未搜索时：历史 + 筛选入口 -->
+  <block wx:if="{{!searched}}">
+    <!-- 搜索历史 -->
+    <view class="section" wx:if="{{historyList.length > 0}}">
+      <view class="section-head">
+        <text class="section-title">搜索历史</text>
+        <text class="section-action" bindtap="onClearHistory">一键清空</text>
+      </view>
+      <view class="history-list">
+        <view
+          class="history-item"
+          wx:for="{{historyList}}"
+          wx:key="*this"
+          data-word="{{item}}"
+          bindtap="onHistoryTap"
+        >
+          <text class="history-text">{{item}}</text>
+          <text class="history-del" data-word="{{item}}" catchtap="onHistoryDelete">×</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 筛选分类（快捷添加） -->
+    <view class="section">
+      <view class="section-title">按行业筛选</view>
+      <view class="filter-chips">
+        <view
+          class="chip {{item.active ? 'active' : ''}}"
+          wx:for="{{categoryList}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          data-name="{{item.name}}"
+          bindtap="onAddFilter"
+        >{{item.name}}</view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 搜索后：筛选标签 + 结果 -->
+  <block wx:if="{{searched}}">
+    <!-- 当前筛选条件标签 -->
+    <view class="filter-tags-bar" wx:if="{{filterTags.length > 0}}">
+      <view class="filter-tags">
+        <view
+          class="filter-tag"
+          wx:for="{{filterTags}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          data-type="{{item.type}}"
+          bindtap="onRemoveFilterTag"
+        >
+          <text>{{item.name}}</text>
+          <text class="tag-close">×</text>
+        </view>
+      </view>
+      <text class="clear-all" bindtap="onClearAllFilters">一键清除</text>
+    </view>
+
+    <!-- 筛选快捷入口（搜索后仍可添加） -->
+    <view class="section section-inline">
+      <view class="filter-chips">
+        <view
+          class="chip {{item.active ? 'active' : ''}}"
+          wx:for="{{categoryList}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          data-name="{{item.name}}"
+          bindtap="onAddFilter"
+        >{{item.name}}</view>
+      </view>
+    </view>
+
+    <!-- 搜索结果 -->
+    <view class="result-area">
+      <view wx:if="{{loading}}" class="loading">加载中...</view>
+      <view wx:elif="{{resultList.length === 0}}" class="empty">暂无相关项目</view>
+      <view wx:else class="result-list">
+        <project-card
+          wx:for="{{resultList}}"
+          wx:key="id"
+          project="{{item}}"
+          bind:tap="onProjectTap"
+        />
+      </view>
+    </view>
+  </block>
+</scroll-view>

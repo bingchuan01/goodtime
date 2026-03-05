@@ -1,0 +1,9 @@
+<!--search-bar.wxml-->
+<view class="search-bar" bindtap="onSearchTap">
+  <view class="search-input-wrapper">
+    <image wx:if="{{showIcon}}" class="search-icon" src="/images/icons/search.svg" mode="aspectFit" binderror="onIconError"></image>
+    <text class="icon-placeholder" wx:else>🔍</text>
+    <text class="placeholder">{{placeholder}}</text>
+  </view>
+  <view class="search-btn">搜索</view>
+</view>

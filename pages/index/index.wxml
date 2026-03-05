@@ -1,7 +1,44 @@
 <!--index.wxml-->
-<navigation-bar title="Weixin" back="{{false}}" color="black" background="#FFF"></navigation-bar>
-<scroll-view class="scrollarea" scroll-y type="list">
-  <view class="container">
-    Weixin
+<view class="page-content">
+  <!-- 固定区域：导航栏 + LOGO（在红线上一行，不被摄像头遮挡）+ 分隔线 -->
+  <view class="fixed-header">
+    <navigation-bar title="" back="{{false}}" color="black" background="transparent"></navigation-bar>
+    <header-logo logo-url="/images/hsjlogo.png"></header-logo>
   </view>
-</scroll-view>
+  <scroll-view class="scrollarea" scroll-y="true" refresher-enabled="{{true}}" refresher-triggered="{{refreshing}}" bindrefresherrefresh="onRefresh" bindscrolltolower="onLoadMore">
+  <!-- 数据看板 -->
+  <data-dashboard data-list="{{dashboardData}}"></data-dashboard>
+  
+  <!-- 搜索栏 -->
+  <search-bar placeholder="种草品牌从此刻开始" bind:search="onSearch"></search-bar>
+  
+  <!-- 分类导航 -->
+  <category-nav category-list="{{categoryList}}" current-category-id="{{currentCategoryId}}" bind:change="onCategoryChange"></category-nav>
+  
+  <!-- 项目列表（瀑布流） -->
+  <view class="project-list">
+    <view class="project-column" wx:for="{{projectColumns}}" wx:key="index" wx:for-index="colIndex" wx:for-item="column">
+      <project-card wx:for="{{column}}" wx:for-item="project" wx:for-index="projIndex" wx:key="id" project="{{project}}" bind:tap="onProjectTap"></project-card>
+    </view>
+  </view>
+
+  <!-- 项目列表加载失败：空状态 + 重试 -->
+  <view class="project-empty project-empty-error" wx:if="{{!loading && loadError}}">
+    <text class="empty-desc">加载失败，请检查网络</text>
+    <text class="empty-hint">真机调试请将 api.js 中 BASE_URL 改为电脑局域网 IP（如 192.168.x.x:3000/api）</text>
+    <button class="empty-retry" bindtap="onRetryProjects">重试</button>
+  </view>
+  <!-- 暂无项目 -->
+  <view class="project-empty" wx:if="{{!loading && !loadError && projectList.length === 0}}">
+    <text class="empty-desc">暂无项目</text>
+  </view>
+  
+  <!-- 加载状态 -->
+  <view class="loading-more" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+  <view class="no-more" wx:if="{{!hasMore && projectList.length > 0}}">
+    <text>没有更多了</text>
+  </view>
+  </scroll-view>
+</view>

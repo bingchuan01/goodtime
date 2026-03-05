@@ -1,0 +1,64 @@
+/**
+ * 项目分类：默认数据与图标映射
+ * 官方后台可添加/删除分类，前端从接口拉取，失败时使用此默认列表
+ */
+
+const ICON_MAP = {
+  hot: '/images/icons/fire.svg',
+  trend: '/images/icons/trend.svg',
+  new: '/images/icons/new.svg',
+  education: '/images/icons/education.svg',
+  beauty: '/images/icons/beauty.svg',
+  food: '/images/icons/food.svg',
+  retail: '/images/icons/shop.svg',
+  service: '/images/icons/handshake.svg'
+};
+
+// 默认分类（接口不可用时的回退）
+// 前6项用于导航栏，其余用于发布选择
+const DEFAULT_CATEGORIES = [
+  { id: 'hot', name: '热门', icon: '/images/icons/fire.svg' },
+  { id: 'trend', name: '趋势', icon: '/images/icons/trend.svg' },
+  { id: 'new', name: '上新', icon: '/images/icons/new.svg' },
+  { id: 'education', name: '教育培训', icon: '/images/icons/education.svg' },
+  { id: 'beauty', name: '医美护肤', icon: '/images/icons/beauty.svg' },
+  { id: 'food', name: '餐饮美食', icon: '/images/icons/food.svg' },
+  { id: 'retail', name: '零售连锁', icon: '/images/icons/shop.svg' },
+  { id: 'service', name: '生活服务', icon: '/images/icons/handshake.svg' },
+  { id: 'beverage', name: '食品酒水', icon: '/images/icons/food.svg' },
+  { id: 'medical', name: '医美护肤', icon: '/images/icons/beauty.svg' },
+  { id: 'entertainment', name: '休闲娱乐', icon: '/images/icons/fire.svg' }
+];
+
+/**
+ * 规范化分类项：确保 icon 为有效路径
+ * 后端可返回 icon 为：完整 URL、相对路径、或图标 key（如 fire）
+ */
+function normalizeCategory(item) {
+  if (!item || !item.id) return null;
+  let icon = item.icon || '';
+  if (!icon || icon.indexOf('/') === -1) {
+    icon = ICON_MAP[item.id] || ICON_MAP[item.icon] || '/images/icons/fire.svg';
+  }
+  return {
+    id: String(item.id),
+    name: item.name || item.label || '',
+    icon: icon
+  };
+}
+
+/**
+ * 规范化分类列表
+ */
+function normalizeList(list) {
+  if (!Array.isArray(list)) return DEFAULT_CATEGORIES;
+  const normalized = list.map(normalizeCategory).filter(Boolean);
+  return normalized.length > 0 ? normalized : DEFAULT_CATEGORIES;
+}
+
+module.exports = {
+  DEFAULT_CATEGORIES,
+  ICON_MAP,
+  normalizeCategory,
+  normalizeList
+};

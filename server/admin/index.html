@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <title>好时机 - 管理后台</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+    .container { max-width: 1600px; margin: 0 auto; min-width: 0; }
+    h1 { margin: 0 0 20px; font-size: 20px; }
+    .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+    input, textarea, select, button { font-size: 14px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; }
+    button { cursor: pointer; background: #FF6B35; color: #fff; border: none; }
+    button.secondary { background: #666; }
+    button.small { padding: 4px 10px; font-size: 12px; margin-right: 6px; white-space: nowrap; }
+    .login-form .row { margin-bottom: 12px; }
+    .login-form label { display: inline-block; width: 80px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .tabs a { padding: 8px 16px; background: #eee; border-radius: 4px; text-decoration: none; color: #333; }
+    .tabs a.active { background: #FF6B35; color: #fff; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #f9f9f9; white-space: nowrap; }
+    td.actions-cell { white-space: nowrap; }
+    .status { font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+    .status.pending { background: #fff3cd; }
+    .status.approved { background: #d4edda; }
+    .status.rejected { background: #f8d7da; }
+    .expired { color: #c00; font-weight: 600; }
+    .hidden { display: none; }
+    .error { color: #c00; font-size: 14px; margin-top: 8px; }
+    .config-row { margin-bottom: 12px; }
+    .config-row label { display: block; margin-bottom: 4px; font-weight: 600; }
+    textarea { width: 100%; min-height: 100px; }
+    .detail-modal { position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }.detail-modal.hidden { display: none !important; }
+    .detail-modal-backdrop { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); cursor: pointer; }
+    .detail-modal .detail-box { position: relative; z-index: 1; background: #fff; border-radius: 8px; max-width: 560px; width: 100%; max-height: 85vh; overflow: auto; padding: 20px; }
+    .detail-modal .detail-close-wrap { position: relative; z-index: 2; margin-top: 16px; }
+    .detail-modal h3 { margin: 0 0 12px; font-size: 16px; }
+    .detail-modal .detail-line { margin-bottom: 8px; font-size: 14px; word-break: break-all; }
+    .detail-link { color: #1a0dab; text-decoration: underline; cursor: pointer; }
+    .detail-link:hover { text-decoration: underline; }
+    .link-blue { color: #1a0dab; text-decoration: underline; }
+    .link-blue:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loginPage" class="card">
+      <h1>管理后台登录</h1>
+      <form class="login-form" id="loginForm">
+        <div class="row"><label>用户名</label><input type="text" id="username" required /></div>
+        <div class="row"><label>密码</label><input type="password" id="password" required /></div>
+        <button type="submit">登录</button>
+        <span class="error" id="loginError"></span>
+      </form>
+    </div>
+
+    <div id="mainPage" class="hidden">
+      <h1>好时机 管理后台 <span style="font-size:12px;color:#888;font-weight:normal;">(含删除与详情页链接)</span></h1>
+      <div class="tabs">
+        <a href="#" data-tab="projects" class="active">项目管理</a>
+        <a href="#" data-tab="users">用户管理</a>
+        <a href="#" data-tab="categories">分类管理</a>
+        <a href="#" data-tab="config">配置</a>
+        <a href="#" data-tab="carousel">成为他们</a>
+        <a href="#" data-tab="leads">线索</a>
+        <a href="#" data-tab="messages">咨询合作</a>
+        <a href="#" data-tab="agreements">协议管理</a>
+        <a href="#" id="logoutBtn">退出</a>
+      </div>
+
+      <div id="tab-projects" class="tab-pane">
+        <div class="card">
+          <label>状态筛选 </label>
+          <select id="projectStatus">
+            <option value="">全部</option>
+            <option value="pending">待审核</option>
+            <option value="approved">已通过</option>
+            <option value="rejected">已退回</option>
+          </select>
+          <button type="button" id="refreshProjects" class="small">刷新</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>ID</th><th>标题</th><th>发布者</th><th>项目发布类型</th><th>状态</th><th>发布时间</th><th>到期时间</th><th>展区</th><th class="actions-cell">操作</th></tr>
+              </thead>
+              <tbody id="projectList"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-users" class="tab-pane hidden">
+        <div class="card">
+          <h3>发布用户身份标签（便于用户等级分类管理）</h3>
+          <table>
+            <thead>
+              <tr><th>用户ID</th><th>昵称</th><th>会员等级</th><th>身份标签</th><th>操作</th></tr>
+            </thead>
+            <tbody id="userList"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-categories" class="tab-pane hidden">
+        <div class="card">
+          <h3>分类列表</h3>
+          <table>
+            <thead>
+              <tr><th>ID</th><th>名称</th><th>图标</th><th>排序</th><th>操作</th></tr>
+            </thead>
+            <tbody id="categoryList"></tbody>
+          </table>
+          <div style="margin-top:12px">
+            <input type="text" id="newCatId" placeholder="ID（英文）" />
+            <input type="text" id="newCatName" placeholder="名称" />
+            <input type="text" id="newCatIcon" placeholder="图标路径" />
+            <input type="number" id="newCatSort" placeholder="排序" value="0" />
+            <button type="button" id="addCategory" class="small">新增</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-config" class="tab-pane hidden">
+        <div class="card">
+          <h3>数据看板（首页）</h3>
+          <div class="config-row">
+            <label>市场规模</label><input type="text" id="cfg_marketSize" />
+          </div>
+          <div class="config-row">
+            <label>服务商家</label><input type="text" id="cfg_serviceMerchants" />
+          </div>
+          <div class="config-row">
+            <label>战略合作</label><input type="text" id="cfg_strategicPartners" />
+          </div>
+          <div class="config-row">
+            <label>市场份额</label><input type="text" id="cfg_marketShare" />
+          </div>
+          <div class="config-row">
+            <label>注册用户</label><input type="text" id="cfg_registeredUsers" />
+          </div>
+          <button type="button" id="saveDashboard">保存看板</button>
+        </div>
+        <div class="card">
+          <h3>购买须知（支付页）</h3>
+          <textarea id="cfg_purchase_notice" rows="6"></textarea>
+          <button type="button" id="savePurchaseNotice" class="small">保存</button>
+        </div>
+        <div class="card">
+          <h3>权益说明</h3>
+          <textarea id="cfg_benefits_doc" rows="8"></textarea>
+          <button type="button" id="saveBenefitsDoc" class="small">保存</button>
+        </div>
+      </div>
+
+      <div id="tab-carousel" class="tab-pane hidden">
+        <div class="card">
+          <h3>成为他们 - 卡片管理</h3>
+          <p style="font-size: 12px; color: #666; margin-bottom: 16px;">支持添加封面图片和外部链接（抖音、小红书、视频号、公众号等）</p>
+          <div id="carouselList"></div>
+          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+            <h4>添加新卡片</h4>
+            <div class="config-row">
+              <label>标题</label>
+              <input type="text" id="newCarouselTitle" placeholder="案例标题" style="width: 300px;" />
+            </div>
+            <div class="config-row">
+              <label>封面图片URL</label>
+              <input type="text" id="newCarouselCover" placeholder="图片URL（支持上传后复制）" style="width: 500px;" />
+              <button type="button" class="small" onclick="uploadCarouselImage()">上传图片</button>
+            </div>
+            <div class="config-row">
+              <label>链接地址</label>
+              <input type="text" id="newCarouselLink" placeholder="抖音/小红书/视频号/公众号链接" style="width: 500px;" />
+            </div>
+            <div class="config-row">
+              <label>链接类型</label>
+              <select id="newCarouselLinkType" style="width: 200px;">
+                <option value="external">外部链接</option>
+                <option value="internal">内部页面</option>
+              </select>
+            </div>
+            <button type="button" id="addCarousel" style="margin-top: 10px;">添加卡片</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-leads" class="tab-pane hidden">
+        <div class="card">
+          <table>
+            <thead>
+              <tr><th>项目</th><th>姓名</th><th>手机</th><th>地址</th><th>时间</th></tr>
+            </thead>
+            <tbody id="leadsList"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-messages" class="tab-pane hidden">
+        <div class="card">
+          <h3>咨询合作站内信（用户发给官方的留言）</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>ID</th><th>发件人</th><th>联系方式</th><th>主题</th><th>正文</th><th>时间</th></tr>
+              </thead>
+              <tbody id="messagesList"></tbody>
+            </table>
+          </div>
+          <button type="button" id="refreshMessages" class="small">刷新</button>
+        </div>
+      </div>
+
+      <div id="tab-agreements" class="tab-pane hidden">
+        <div class="card">
+          <h3>协议模板管理</h3>
+          <div style="margin-bottom: 20px; padding: 16px; background: #f9f9f9; border-radius: 4px;">
+            <h4>上传新协议模板</h4>
+            <div class="config-row">
+              <label>协议文件</label>
+              <input type="file" id="agreementTemplateFile" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+            </div>
+            <div class="config-row">
+              <label>版本号</label>
+              <input type="text" id="agreementTemplateVersion" placeholder="例如：v1.0" style="width: 200px;" />
+            </div>
+            <div class="config-row">
+              <label>文件名称</label>
+              <input type="text" id="agreementTemplateFileName" placeholder="协议文件名称" style="width: 300px;" />
+            </div>
+            <button type="button" id="uploadAgreementTemplate" class="small">上传协议模板</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>ID</th><th>文件名称</th><th>版本</th><th>状态</th><th>上传人</th><th>上传时间</th><th>操作</th></tr>
+              </thead>
+              <tbody id="agreementTemplatesList"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <h3>用户上传协议审核</h3>
+          <div style="margin-bottom: 12px;">
+            <label>状态筛选 </label>
+            <select id="agreementStatusFilter">
+              <option value="">全部</option>
+              <option value="pending">待审核</option>
+              <option value="approved">已通过</option>
+              <option value="rejected">已驳回</option>
+            </select>
+            <button type="button" id="refreshAgreements" class="small">刷新</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>ID</th><th>项目ID</th><th>用户</th><th>协议模板</th><th>状态</th><th>上传时间</th><th>操作</th></tr>
+              </thead>
+              <tbody id="userAgreementsList"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 项目详情弹窗（可点击链接查看详情页与协议） -->
+  <div id="projectDetailModal" class="detail-modal hidden" data-project-id="">
+    <div class="detail-modal-backdrop" onclick="closeProjectDetailModal()"></div>
+    <div class="detail-box">
+      <h3>项目详情</h3>
+      <div id="projectDetailContent"></div>
+      <div class="detail-close-wrap">
+        <button type="button" class="small secondary" id="deleteProjectInModal" onclick="deleteProjectFromModal()">删除项目</button>
+        <button type="button" class="small" id="closeProjectDetail" onclick="closeProjectDetailModal()">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin + '/api';
+    function token() { return localStorage.getItem('adminToken') || ''; }
+    function authHeader() { return { 'Authorization': 'Bearer ' + token(), 'Content-Type': 'application/json' }; }
+
+    document.getElementById('loginForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const errEl = document.getElementById('loginError');
+      errEl.textContent = '';
+      try {
+        const res = await fetch(API + '/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (data.code === 0 && data.data && data.data.token) {
+          localStorage.setItem('adminToken', data.data.token);
+          document.getElementById('loginPage').classList.add('hidden');
+          document.getElementById('mainPage').classList.remove('hidden');
+          loadProjects();
+          loadConfig();
+        } else {
+          errEl.textContent = data.message || '登录失败';
+        }
+      } catch (e) {
+        errEl.textContent = '网络错误';
+      }
+    };
+
+    document.getElementById('logoutBtn').onclick = () => {
+      localStorage.removeItem('adminToken');
+      document.getElementById('mainPage').classList.add('hidden');
+      document.getElementById('loginPage').classList.remove('hidden');
+    };
+
+    document.querySelectorAll('.tabs a[data-tab]').forEach(a => {
+      a.onclick = (e) => {
+        e.preventDefault();
+        document.querySelectorAll('.tabs a').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(x => x.classList.add('hidden'));
+        a.classList.add('active');
+        const tab = a.getAttribute('data-tab');
+        document.getElementById('tab-' + tab).classList.remove('hidden');
+        if (tab === 'projects') loadProjects();
+        if (tab === 'users') loadUsers();
+        if (tab === 'categories') loadCategories();
+        if (tab === 'config') loadConfig();
+        if (tab === 'carousel') loadCarousel();
+        if (tab === 'leads') loadLeads();
+        if (tab === 'messages') loadMessages();
+        if (tab === 'agreements') loadAgreements();
+      };
+    });
+
+    async function loadProjects() {
+      const status = document.getElementById('projectStatus').value;
+      const url = API + '/admin/projects' + (status ? '?status=' + status : '');
+      const res = await fetch(url, { headers: authHeader() });
+      const data = await res.json();
+      const tbody = document.getElementById('projectList');
+      if (data.code !== 0 || !data.data || !data.data.list) {
+        tbody.innerHTML = '<tr><td colspan="9">加载失败</td></tr>';
+        return;
+      }
+      const fmtTime = (t) => t ? String(t).replace('T', ' ').trim().slice(0, 19) : '-';
+      const addOneYear = (dateStr) => {
+        if (!dateStr) return null;
+        const d = new Date(String(dateStr).replace('T', ' ').trim());
+        if (isNaN(d.getTime())) return null;
+        d.setFullYear(d.getFullYear() + 1);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      };
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const isExpired = (t) => {
+        if (!t) return false;
+        const d = new Date(String(t).replace('T', ' ').slice(0, 10));
+        d.setHours(0, 0, 0, 0);
+        return d < today;
+      };
+      tbody.innerHTML = data.data.list.map(p => {
+        const expireVal = (p.expire_at != null && String(p.expire_at).trim() !== '') ? p.expire_at : (p.published_at ? addOneYear(p.published_at) : null);
+        const expAt = expireVal ? fmtTime(expireVal) : '-';
+        const expired = isExpired(expireVal);
+        return `
+        <tr>
+          <td>${p.id}</td>
+          <td>${p.title || '-'}</td>
+          <td>${p.publisher || '-'}</td>
+          <td>${p.publish_type || '-'}</td>
+          <td><span class="status ${p.status}">${p.status}</span></td>
+          <td>${fmtTime(p.published_at || p.created_at)}</td>
+          <td class="${expired ? 'expired' : ''}">${expAt}</td>
+          <td>${p.display_zone || '-'}</td>
+          <td class="actions-cell">
+            <button class="small" data-id="${p.id}" data-action="detail">详情</button>
+            ${p.status === 'pending' ? `
+              <button class="small" data-id="${p.id}" data-action="approve">通过</button>
+              <button class="small secondary" data-id="${p.id}" data-action="reject">退回</button>
+            ` : ''}
+            ${p.status === 'approved' ? `<button class="small" data-id="${p.id}" data-action="official">金盾/展区</button>` : ''}
+            <button class="small secondary" data-id="${p.id}" data-action="delete">删除</button>
+          </td>
+        </tr>
+      `;
+      }).join('');
+      tbody.querySelectorAll('button[data-action]').forEach(btn => {
+        btn.onclick = () => auditProject(btn.getAttribute('data-id'), btn.getAttribute('data-action'));
+      });
+    }
+
+    async function auditProject(id, action) {
+      if (action === 'detail') {
+        showProjectDetail(id);
+        return;
+      }
+      if (action === 'official') {
+        setOfficial(id);
+        return;
+      }
+      if (action === 'delete') {
+        if (!confirm('确定删除该项目？删除后不可恢复。')) return;
+        try {
+          const res = await fetch(API + '/admin/projects/' + id, { method: 'DELETE', headers: authHeader() });
+          const data = await res.json();
+          alert(data.message || (data.code === 0 ? '已删除' : '删除失败'));
+          if (data.code === 0) { closeProjectDetailModal(); loadProjects(); }
+        } catch (e) {
+          alert('删除失败');
+        }
+        return;
+      }
+      const status = action === 'approve' ? 'approved' : 'rejected';
+      const displayZone = action === 'approve' ? (prompt('展区（hot/trend/new，留空按分类）') || '') : '';
+      const rejectReason = action === 'reject' ? (prompt('退回原因') || '') : '';
+      const res = await fetch(API + '/admin/projects/' + id + '/audit', {
+        method: 'PUT',
+        headers: authHeader(),
+        body: JSON.stringify({ status, displayZone, rejectReason })
+      });
+      const data = await res.json();
+      alert(data.message || (data.code === 0 ? '操作成功' : '失败'));
+      if (data.code === 0) loadProjects();
+    }
+
+    function linkHtml(url, text) {
+      if (!url || !String(url).trim()) return text || '-';
+      const u = String(url).trim();
+      return '<a href="' + u.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener" class="detail-link">' + (text || '查看') + '</a>';
+    }
+    function closeProjectDetailModal() {
+      document.getElementById('projectDetailModal').classList.add('hidden');
+    }
+    window.closeProjectDetailModal = closeProjectDetailModal;
+    function copyDetailPath(path) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(path).then(() => alert('已复制到剪贴板')).catch(() => fallbackCopy(path));
+      } else {
+        fallbackCopy(path);
+      }
+    }
+    function fallbackCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        alert('已复制到剪贴板');
+      } catch (e) {
+        alert('复制失败，请手动复制：' + text);
+      }
+      document.body.removeChild(ta);
+    }
+    window.copyDetailPath = copyDetailPath;
+
+    async function showProjectDetail(id) {
+      const res = await fetch(API + '/admin/projects/' + id, { headers: authHeader() });
+      const data = await res.json();
+      if (data.code !== 0 || !data.data) {
+        alert('加载失败');
+        return;
+      }
+      const p = data.data;
+      const pubTime = (p.published_at || p.created_at || '').replace('T', ' ').slice(0, 19) || '未设置';
+      const expTime = (p.expire_at || '').replace('T', ' ').slice(0, 19) || '未设置';
+      const publisher = (p.publisher && p.publisher.nickname) ? p.publisher.nickname : (p.user_id || '-');
+      const carouselUrls = p.carousel_images || [];
+      const videoUrl = (p.video_url || '').trim();
+
+      let html = '<div class="detail-line"><strong>ID</strong> ' + (p.id || '') + '</div>';
+      html += '<div class="detail-line"><strong>标题</strong> ' + (p.title || '-') + '</div>';
+      html += '<div class="detail-line"><strong>发布者</strong> ' + publisher + '</div>';
+      html += '<div class="detail-line"><strong>状态</strong> ' + (p.status || '-') + '</div>';
+      html += '<div class="detail-line"><strong>发布时间</strong> ' + pubTime + '</div>';
+      html += '<div class="detail-line"><strong>到期时间</strong> ' + expTime + '</div>';
+      html += '<div class="detail-line"><strong>展区</strong> ' + (p.display_zone || '-') + '</div>';
+      html += '<div class="detail-line"><strong>金盾</strong> ' + (p.is_official ? '是' : '否') + '</div>';
+      html += '<div class="detail-line"><strong>轮播图</strong> ';
+      if (carouselUrls.length) {
+        carouselUrls.forEach((url, i) => { html += linkHtml(url, '查看图' + (i + 1)) + ' '; });
+      } else {
+        html += '-';
+      }
+      html += '</div>';
+      html += '<div class="detail-line"><strong>视频</strong> ' + (videoUrl ? linkHtml(videoUrl, '查看视频') : '-') + '</div>';
+      html += '<div class="detail-line"><strong>退回原因</strong> ' + (p.reject_reason || '-') + '</div>';
+
+      const detailPath = 'pages/video-detail/video-detail?id=' + (p.id || '');
+      const detailPathEsc = (detailPath || '').replace(/"/g, '&quot;');
+      html += '<div class="detail-line" style="margin-top:12px;"><strong>【详情页】</strong></div>';
+      html += '<div class="detail-line">小程序路径: <code id="detailPagePath">' + (detailPath || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code> <button type="button" class="small" data-path="' + detailPathEsc + '" onclick="copyDetailPath(this.getAttribute(\'data-path\'))">复制</button></div>';
+      const detailImgs = p.detail_content_images || [];
+      if (detailImgs.length) {
+        html += '<div class="detail-line"><strong>详情页图片</strong> ';
+        detailImgs.forEach((url, i) => { html += linkHtml(url, '查看图' + (i + 1)) + ' '; });
+        html += '</div>';
+      }
+      const detailContent = (p.detail_content || '').trim();
+      if (detailContent) {
+        html += '<div class="detail-line" style="margin-top:8px;"><strong>详情正文</strong></div>';
+        html += '<div class="detail-line detail-content-preview" style="max-height:200px;overflow:auto;border:1px solid #eee;padding:8px;margin-top:4px;">' + detailContent + '</div>';
+      }
+
+      if (p.agreement) {
+        html += '<div class="detail-line" style="margin-top:12px;"><strong>【入驻协议】</strong></div>';
+        html += '<div class="detail-line">状态: ' + (p.agreement.status === 'approved' ? '已通过' : (p.agreement.status === 'rejected' ? '已驳回' : '待审核')) + '</div>';
+        html += '<div class="detail-line">协议文档: ' + (p.agreement.signedFileUrl ? linkHtml(p.agreement.signedFileUrl, '查看协议') : '-') + '</div>';
+        if (p.agreement.templateName) html += '<div class="detail-line">模板: ' + (p.agreement.templateName || '-') + '</div>';
+        if (p.agreement.templateVersion) html += '<div class="detail-line">版本: ' + (p.agreement.templateVersion || '-') + '</div>';
+        if (p.agreement.rejectReason) html += '<div class="detail-line">驳回原因: ' + (p.agreement.rejectReason || '-') + '</div>';
+        html += '<div class="detail-line">上传时间: ' + (p.agreement.createdAt ? p.agreement.createdAt.replace('T', ' ').slice(0, 19) : '-') + '</div>';
+      } else {
+        html += '<div class="detail-line" style="margin-top:12px;"><strong>【入驻协议】</strong> 未上传</div>';
+      }
+
+      document.getElementById('projectDetailContent').innerHTML = html;
+      const modalEl = document.getElementById('projectDetailModal');
+      modalEl.dataset.projectId = String(p.id || '');
+      modalEl.classList.remove('hidden');
+    }
+
+    async function deleteProjectFromModal() {
+      const modalEl = document.getElementById('projectDetailModal');
+      const id = modalEl.dataset.projectId;
+      if (!id) return;
+      if (!confirm('确定删除该项目？删除后不可恢复。')) return;
+      try {
+        const res = await fetch(API + '/admin/projects/' + id, { method: 'DELETE', headers: authHeader() });
+        const data = await res.json();
+        alert(data.message || (data.code === 0 ? '已删除' : '删除失败'));
+        if (data.code === 0) {
+          closeProjectDetailModal();
+          loadProjects();
+        }
+      } catch (e) {
+        alert('删除失败');
+      }
+    }
+    window.deleteProjectFromModal = deleteProjectFromModal;
+
+    async function setOfficial(id) {
+      const isOfficial = confirm('设为金盾认证？取消则否');
+      const displayZone = prompt('展区（hot/trend/new，留空不改）', '') || undefined;
+      const body = { isOfficial: isOfficial };
+      if (displayZone !== undefined) body.displayZone = displayZone;
+      const res = await fetch(API + '/admin/projects/' + id + '/official', {
+        method: 'PUT',
+        headers: authHeader(),
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      alert(data.message || (data.code === 0 ? '已保存' : '失败'));
+      if (data.code === 0) loadProjects();
+    }
+
+    async function loadUsers() {
+      const res = await fetch(API + '/admin/users', { headers: authHeader() });
+      const data = await res.json();
+      const tbody = document.getElementById('userList');
+      if (data.code !== 0 || !data.data) {
+        tbody.innerHTML = '<tr><td colspan="5">加载失败</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.data.map(u => `
+        <tr>
+          <td>${u.id}</td>
+          <td>${u.nickname || '-'}</td>
+          <td>${u.member_level || '-'}</td>
+          <td>${u.identity_tag || '-'}</td>
+          <td><button class="small" data-uid="${u.id}">设置身份标签</button></td>
+        </tr>
+      `).join('');
+      tbody.querySelectorAll('button[data-uid]').forEach(btn => {
+        btn.onclick = () => setIdentityTag(btn.getAttribute('data-uid'));
+      });
+    }
+
+    async function setIdentityTag(userId) {
+      const hint = '可填：品牌方、加盟商、个人、企业等，便于等级分类';
+      const value = prompt('设置身份标签\n' + hint, '');
+      if (value === null) return;
+      const res = await fetch(API + '/admin/users/' + encodeURIComponent(userId) + '/identity-tag', {
+        method: 'PUT',
+        headers: authHeader(),
+        body: JSON.stringify({ identity_tag: (value || '').trim() })
+      });
+      const data = await res.json();
+      alert(data.message || (data.code === 0 ? '已保存' : '失败'));
+      if (data.code === 0) loadUsers();
+    }
+
+    async function loadCategories() {
+      const res = await fetch(API + '/admin/categories', { headers: authHeader() });
+      const data = await res.json();
+      const tbody = document.getElementById('categoryList');
+      if (data.code !== 0 || !data.data) {
+        tbody.innerHTML = '<tr><td colspan="5">加载失败</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.data.map(c => `
+        <tr>
+          <td>${c.id}</td>
+          <td>${c.name}</td>
+          <td>${c.icon || '-'}</td>
+          <td>${c.sort}</td>
+          <td><button class="small secondary" data-cid="${c.id}" data-cat-disable">禁用</button></td>
+        </tr>
+      `).join('');
+      tbody.querySelectorAll('[data-cat-disable]').forEach(btn => {
+        btn.onclick = () => disableCategory(btn.getAttribute('data-cid'));
+      });
+    }
+
+    async function disableCategory(id) {
+      if (!confirm('确定禁用分类 ' + id + '？')) return;
+      const res = await fetch(API + '/admin/categories/' + id, { method: 'DELETE', headers: authHeader() });
+      const data = await res.json();
+      alert(data.message || (data.code === 0 ? '已禁用' : '失败'));
+      if (data.code === 0) loadCategories();
+    }
+
+    document.getElementById('addCategory').onclick = async () => {
+      const id = document.getElementById('newCatId').value.trim();
+      const name = document.getElementById('newCatName').value.trim();
+      const icon = document.getElementById('newCatIcon').value.trim();
+      const sort = parseInt(document.getElementById('newCatSort').value, 10) || 0;
+      if (!id || !name) { alert('请填写 ID 和名称'); return; }
+      const res = await fetch(API + '/admin/categories', {
+        method: 'POST',
+        headers: authHeader(),
+        body: JSON.stringify({ id, name, icon, sort })
+      });
+      const data = await res.json();
+      alert(data.message || (data.code === 0 ? '已添加' : '失败'));
+      if (data.code === 0) {
+        document.getElementById('newCatId').value = '';
+        document.getElementById('newCatName').value = '';
+        document.getElementById('newCatIcon').value = '';
+        loadCategories();
+      }
+    };
+
+    document.getElementById('projectStatus').onchange = loadProjects;
+    document.getElementById('refreshProjects').onclick = loadProjects;
+
+    async function loadConfig() {
+      try {
+        const [dash, notice, benefits] = await Promise.all([
+          fetch(API + '/admin/config/dashboard', { headers: authHeader() }).then(r => r.json()),
+          fetch(API + '/admin/config/purchase_notice', { headers: authHeader() }).then(r => r.json()),
+          fetch(API + '/admin/config/benefits_doc', { headers: authHeader() }).then(r => r.json())
+        ]);
+        if (dash.code === 0 && dash.data) {
+          const d = dash.data;
+          document.getElementById('cfg_marketSize').value = d.marketSize || '';
+          document.getElementById('cfg_serviceMerchants').value = d.serviceMerchants || '';
+          document.getElementById('cfg_strategicPartners').value = d.strategicPartners || '';
+          document.getElementById('cfg_marketShare').value = d.marketShare || '';
+          document.getElementById('cfg_registeredUsers').value = d.registeredUsers || '';
+        }
+        if (notice.code === 0 && notice.data != null) document.getElementById('cfg_purchase_notice').value = notice.data || '';
+        if (benefits.code === 0 && benefits.data != null) document.getElementById('cfg_benefits_doc').value = benefits.data || '';
+      } catch (e) {}
+    }
+
+    document.getElementById('saveDashboard').onclick = async () => {
+      const body = {
+        marketSize: document.getElementById('cfg_marketSize').value,
+        serviceMerchants: document.getElementById('cfg_serviceMerchants').value,
+        strategicPartners: document.getElementById('cfg_strategicPartners').value,
+        marketShare: document.getElementById('cfg_marketShare').value,
+        registeredUsers: document.getElementById('cfg_registeredUsers').value
+      };
+      const res = await fetch(API + '/admin/config/dashboard', { method: 'PUT', headers: authHeader(), body: JSON.stringify(body) });
+      const data = await res.json();
+      alert(data.code === 0 ? '已保存' : (data.message || '失败'));
+    };
+    document.getElementById('savePurchaseNotice').onclick = async () => {
+      const value = document.getElementById('cfg_purchase_notice').value;
+      const res = await fetch(API + '/admin/config/purchase_notice', { method: 'PUT', headers: authHeader(), body: JSON.stringify(value) });
+      const data = await res.json();
+      alert(data.code === 0 ? '已保存' : (data.message || '失败'));
+    };
+    document.getElementById('saveBenefitsDoc').onclick = async () => {
+      const value = document.getElementById('cfg_benefits_doc').value;
+      const res = await fetch(API + '/admin/config/benefits_doc', { method: 'PUT', headers: authHeader(), body: JSON.stringify(value) });
+      const data = await res.json();
+      alert(data.code === 0 ? '已保存' : (data.message || '失败'));
+    };
+
+    async function loadCarousel() {
+      try {
+        const res = await fetch(API + '/admin/config/benefits_carousel', { headers: authHeader() });
+        const data = await res.json();
+        const container = document.getElementById('carouselList');
+        let carouselList = [];
+        if (data.code === 0 && data.data && Array.isArray(data.data)) {
+          carouselList = data.data;
+        }
+        if (carouselList.length === 0) {
+          container.innerHTML = '<p style="color: #999;">暂无卡片，请添加</p>';
+        } else {
+          container.innerHTML = carouselList.map((item, index) => `
+            <div style="border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 4px;">
+              <div style="display: flex; gap: 12px; align-items: flex-start;">
+                ${item.cover ? `<img src="${item.cover}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 4px;" />` : '<div style="width: 120px; height: 120px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #999;">无封面</div>'}
+                <div style="flex: 1;">
+                  <div style="margin-bottom: 8px;"><strong>${item.title || '未命名'}</strong></div>
+                  <div style="font-size: 12px; color: #666; margin-bottom: 4px;">封面: ${item.cover ? '<a href="' + item.cover + '" target="_blank">查看</a>' : '未设置'}</div>
+                  <div style="font-size: 12px; color: #666; margin-bottom: 4px;">链接: ${item.link ? '<a href="' + item.link + '" target="_blank">' + item.link.substring(0, 50) + '...</a>' : '未设置'}</div>
+                  <div style="font-size: 12px; color: #666; margin-bottom: 8px;">类型: ${item.linkType === 'internal' ? '内部页面' : '外部链接'}</div>
+                  <button class="small" onclick="editCarouselItem(${index})">编辑</button>
+                  <button class="small secondary" onclick="deleteCarouselItem(${index})">删除</button>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+        window._carouselList = carouselList;
+      } catch (e) {
+        console.error(e);
+        document.getElementById('carouselList').innerHTML = '<p style="color: #c00;">加载失败</p>';
+      }
+    }
+
+    function editCarouselItem(index) {
+      const item = window._carouselList[index];
+      if (!item) return;
+      const title = prompt('标题', item.title || '');
+      if (title === null) return;
+      const cover = prompt('封面图片URL', item.cover || '');
+      if (cover === null) return;
+      const link = prompt('链接地址', item.link || '');
+      if (link === null) return;
+      const linkType = prompt('链接类型 (external/internal)', item.linkType || 'external');
+      if (linkType === null) return;
+      window._carouselList[index] = {
+        id: item.id || index + 1,
+        title: title,
+        cover: cover,
+        link: link,
+        linkType: linkType === 'internal' ? 'internal' : 'external'
+      };
+      saveCarousel();
+    }
+
+    function deleteCarouselItem(index) {
+      if (!confirm('确定删除这张卡片吗？')) return;
+      window._carouselList.splice(index, 1);
+      saveCarousel();
+    }
+
+    async function saveCarousel() {
+      const list = window._carouselList || [];
+      const res = await fetch(API + '/admin/config/benefits_carousel', {
+        method: 'PUT',
+        headers: authHeader(),
+        body: JSON.stringify(list)
+      });
+      const data = await res.json();
+      alert(data.code === 0 ? '已保存' : (data.message || '失败'));
+      if (data.code === 0) loadCarousel();
+    }
+
+    document.getElementById('addCarousel').onclick = async () => {
+      const title = document.getElementById('newCarouselTitle').value.trim();
+      const cover = document.getElementById('newCarouselCover').value.trim();
+      const link = document.getElementById('newCarouselLink').value.trim();
+      const linkType = document.getElementById('newCarouselLinkType').value;
+      if (!title) {
+        alert('请填写标题');
+        return;
+      }
+      const list = window._carouselList || [];
+      const newItem = {
+        id: list.length > 0 ? Math.max(...list.map(i => i.id || 0)) + 1 : 1,
+        title: title,
+        cover: cover,
+        link: link,
+        linkType: linkType
+      };
+      list.push(newItem);
+      window._carouselList = list;
+      await saveCarousel();
+      document.getElementById('newCarouselTitle').value = '';
+      document.getElementById('newCarouselCover').value = '';
+      document.getElementById('newCarouselLink').value = '';
+    };
+
+    async function uploadCarouselImage() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+          const res = await fetch(API + '/upload', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token() },
+            body: formData
+          });
+          const data = await res.json();
+          if (data.code === 0 && data.data && data.data.url) {
+            document.getElementById('newCarouselCover').value = data.data.url;
+            alert('上传成功，图片URL已填入');
+          } else {
+            alert('上传失败: ' + (data.message || '未知错误'));
+          }
+        } catch (e) {
+          alert('上传失败: ' + e.message);
+        }
+      };
+      input.click();
+    }
+
+    async function loadLeads() {
+      const res = await fetch(API + '/admin/leads', { headers: authHeader() });
+      const data = await res.json();
+      const tbody = document.getElementById('leadsList');
+      if (data.code !== 0 || !data.data || !data.data.list) {
+        tbody.innerHTML = '<tr><td colspan="5">暂无线索</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.data.list.map(l => `
+        <tr>
+          <td>${l.project_title || l.project_id || '-'}</td>
+          <td>${l.name || '-'}</td>
+          <td>${l.phone || '-'}</td>
+          <td>${l.address || '-'}</td>
+          <td>${l.created_at || '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadMessages() {
+      const res = await fetch(API + '/admin/messages', { headers: authHeader() });
+      const data = await res.json();
+      const tbody = document.getElementById('messagesList');
+      if (data.code !== 0 || !data.data || !data.data.list) {
+        tbody.innerHTML = '<tr><td colspan="6">暂无咨询合作站内信</td></tr>';
+        return;
+      }
+      const fmtTime = (t) => t ? String(t).replace('T', ' ').trim().slice(0, 19) : '-';
+      tbody.innerHTML = data.data.list.map(m => `
+        <tr>
+          <td>${m.id}</td>
+          <td>${m.sender_nickname || m.sender_id || '-'}</td>
+          <td>${m.contact || '-'}</td>
+          <td>${(m.subject || '-').slice(0, 30)}${(m.subject || '').length > 30 ? '…' : ''}</td>
+          <td>${(m.body || '-').slice(0, 50)}${(m.body || '').length > 50 ? '…' : ''}</td>
+          <td>${fmtTime(m.created_at)}</td>
+        </tr>
+      `).join('');
+    }
+    document.getElementById('refreshMessages').onclick = loadMessages;
+    document.getElementById('refreshAgreements').onclick = loadAgreements;
+    document.getElementById('agreementStatusFilter').onchange = loadAgreements;
+    document.getElementById('uploadAgreementTemplate').onclick = uploadAgreementTemplate;
+
+    async function loadAgreements() {
+      try {
+        // 加载协议模板列表
+        const templatesRes = await fetch(API + '/settlement-agreement/templates', { headers: authHeader() });
+        const templatesData = await templatesRes.json();
+        const templatesTbody = document.getElementById('agreementTemplatesList');
+        if (templatesData.code === 0 && templatesData.data) {
+          const fmtTime = (t) => t ? String(t).replace('T', ' ').trim().slice(0, 19) : '-';
+          templatesTbody.innerHTML = templatesData.data.map(t => `
+            <tr>
+              <td>${t.id}</td>
+              <td>${t.fileName || '-'}</td>
+              <td>${t.version || '-'}</td>
+              <td><span class="status ${t.isActive ? 'approved' : ''}">${t.isActive ? '激活' : '未激活'}</span></td>
+              <td>${t.uploadedBy || '-'}</td>
+              <td>${fmtTime(t.createdAt)}</td>
+              <td class="actions-cell">
+                ${t.isActive ? '' : `<button class="small" onclick="setActiveAgreementTemplate(${t.id})">设为激活</button>`}
+                <a href="${t.fileUrl}" target="_blank" rel="noopener" class="link-blue" style="margin-right: 8px;">下载</a>
+              </td>
+            </tr>
+          `).join('');
+        } else {
+          templatesTbody.innerHTML = '<tr><td colspan="7">加载失败</td></tr>';
+        }
+
+        // 加载用户上传的协议列表
+        const status = document.getElementById('agreementStatusFilter').value;
+        const url = API + '/settlement-agreement/admin/list' + (status ? '?status=' + status : '');
+        const agreementsRes = await fetch(url, { headers: authHeader() });
+        const agreementsData = await agreementsRes.json();
+        const agreementsTbody = document.getElementById('userAgreementsList');
+        if (agreementsData.code === 0 && agreementsData.data && agreementsData.data.list) {
+          const fmtTime = (t) => t ? String(t).replace('T', ' ').trim().slice(0, 19) : '-';
+          agreementsTbody.innerHTML = agreementsData.data.list.map(a => `
+            <tr>
+              <td>${a.id}</td>
+              <td>${a.projectId || '-'}</td>
+              <td>${a.userNickname || a.userId || '-'}</td>
+              <td>${a.templateName || '-'} ${a.templateVersion ? '(v' + a.templateVersion + ')' : ''}</td>
+              <td><span class="status ${a.status}">${a.status === 'approved' ? '已通过' : (a.status === 'rejected' ? '已驳回' : '待审核')}</span></td>
+              <td>${fmtTime(a.createdAt)}</td>
+              <td class="actions-cell">
+                ${a.signedFileUrl ? `<a href="${a.signedFileUrl}" target="_blank" rel="noopener" class="link-blue" style="margin-right: 8px;">查看</a>` : ''}
+                ${a.status === 'pending' ? `
+                  <button class="small" onclick="auditSignedAgreement(${a.id}, 'approved', '')">通过</button>
+                  <button class="small secondary" onclick="auditSignedAgreement(${a.id}, 'rejected', '')">驳回</button>
+                ` : ''}
+              </td>
+            </tr>
+          `).join('');
+        } else {
+          agreementsTbody.innerHTML = '<tr><td colspan="7">暂无数据</td></tr>';
+        }
+      } catch (e) {
+        console.error('加载协议数据失败:', e);
+        alert('加载失败');
+      }
+    }
+
+    async function uploadAgreementTemplate() {
+      const fileInput = document.getElementById('agreementTemplateFile');
+      const version = document.getElementById('agreementTemplateVersion').value.trim();
+      const fileName = document.getElementById('agreementTemplateFileName').value.trim();
+      
+      if (!fileInput.files || !fileInput.files[0]) {
+        alert('请选择协议文件');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      if (version) formData.append('version', version);
+      if (fileName) formData.append('fileName', fileName);
+
+      try {
+        const res = await fetch(API + '/settlement-agreement/template', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token() },
+          body: formData
+        });
+        const data = await res.json();
+        if (data.code === 0) {
+          alert('上传成功');
+          fileInput.value = '';
+          document.getElementById('agreementTemplateVersion').value = '';
+          document.getElementById('agreementTemplateFileName').value = '';
+          loadAgreements();
+        } else {
+          alert('上传失败: ' + (data.message || '未知错误'));
+        }
+      } catch (e) {
+        alert('上传失败: ' + e.message);
+      }
+    }
+
+    async function setActiveAgreementTemplate(id) {
+      if (!confirm('确定将此协议模板设为激活状态？这将使其他模板变为未激活状态。')) return;
+      try {
+        // 由于后端逻辑是上传新模板时自动设为激活，这里提示用户
+        alert('请通过上传新协议模板来激活。如需激活现有模板，请联系开发人员添加专门的激活接口。');
+      } catch (e) {
+        alert('操作失败: ' + e.message);
+      }
+    }
+
+    async function auditSignedAgreement(id, status, rejectReason) {
+      if (status === 'rejected') {
+        const reason = prompt('请输入驳回原因', rejectReason || '');
+        if (reason === null) return;
+        rejectReason = reason;
+      }
+      
+      try {
+        const res = await fetch(API + '/settlement-agreement/admin/' + id + '/audit', {
+          method: 'PUT',
+          headers: authHeader(),
+          body: JSON.stringify({ status, rejectReason: rejectReason || '' })
+        });
+        const data = await res.json();
+        alert(data.message || (data.code === 0 ? '操作成功' : '失败'));
+        if (data.code === 0) loadAgreements();
+      } catch (e) {
+        alert('操作失败: ' + e.message);
+      }
+    }
+
+    if (token()) {
+      document.getElementById('loginPage').classList.add('hidden');
+      document.getElementById('mainPage').classList.remove('hidden');
+      loadProjects();
+    }
+  </script>
+</body>
+</html>

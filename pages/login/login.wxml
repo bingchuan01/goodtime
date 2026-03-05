@@ -1,0 +1,63 @@
+<!--手机号登录/注册页-->
+<navigation-bar title="" back="{{false}}" color="black" background="#FFF"></navigation-bar>
+<scroll-view class="scrollarea" scroll-y="true">
+  <!-- 头部区域：欢迎语+平台LOGO -->
+  <header-logo logo-url="/images/hsjlogo.png"></header-logo>
+  <view class="welcome-text">欢迎使用好时机商业品牌小程序</view>
+  
+  <view class="container">
+    <!-- 页面标题 -->
+    <view class="page-title">手机号登录/注册</view>
+    <view class="title-divider"></view>
+
+    <!-- 表单容器 -->
+    <view class="form-container">
+      <!-- 手机号输入框 -->
+      <view class="input-group">
+        <view class="input-label">+86</view>
+        <input class="input" type="number" placeholder="请输入手机号码" value="{{phone}}" bindinput="onPhoneInput" maxlength="11" />
+      </view>
+
+      <!-- 验证码输入框 -->
+      <view class="input-group code-input-group">
+        <view class="input-label">验证码</view>
+        <input class="input code-input" type="number" placeholder="请输入验证码" value="{{code}}" bindinput="onCodeInput" maxlength="6" />
+        <text class="code-btn-text {{codeCountdown > 0 || !phone ? 'disabled' : ''}}" bindtap="onGetCode">
+          {{codeCountdown > 0 ? codeCountdown + 's' : '获取验证码'}}
+        </text>
+      </view>
+
+      <!-- 登录按钮 -->
+      <button class="submit-btn" bindtap="onCodeLogin" disabled="{{!phone || !code || !agreed}}">登录</button>
+
+      <!-- 切换到账号密码登录 -->
+      <view class="switch-login">
+        <text class="switch-link" bindtap="goToPasswordLogin">账号密码登录 ></text>
+      </view>
+
+      <!-- 微信一键登录 -->
+      <button class="wx-login-btn" bindtap="onWxLogin" loading="{{loading}}" disabled="{{loading || !agreed}}">
+        <text class="wx-icon-text">💬</text>
+        <text>微信一键登录</text>
+      </button>
+    </view>
+
+    <!-- 协议勾选 -->
+    <view class="agreement-section">
+      <checkbox-group bindchange="onAgreementChange">
+        <label class="agreement-label">
+          <checkbox value="agree" checked="{{agreed}}" class="agreement-checkbox" />
+          <view class="agreement-content">
+            <text class="agreement-text">我已阅读并同意<text class="link" bindtap="goToAgreement" data-type="user">用户协议</text>、<text class="link" bindtap="goToAgreement" data-type="privacy">隐私政策</text>，完成手机号验证成功后将自动注册</text>
+          </view>
+        </label>
+      </checkbox-group>
+    </view>
+  </view>
+</scroll-view>
+
+
+
+
+
+

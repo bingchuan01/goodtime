@@ -1,0 +1,51 @@
+<!--设置页-->
+<navigation-bar title="设置" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<scroll-view class="container" scroll-y>
+  <view class="menu-section">
+    <view class="menu-item" bindtap="changePassword">
+      <text class="menu-icon">🔐</text>
+      <text class="menu-text">修改登录密码</text>
+      <text class="menu-arrow">></text>
+    </view>
+    <view class="menu-item" bindtap="clearCache">
+      <text class="menu-icon">🗑️</text>
+      <text class="menu-text">清除缓存</text>
+      <text class="menu-arrow">></text>
+      <text class="menu-extra">{{cacheSize}}</text>
+    </view>
+    <view class="menu-item" bindtap="aboutUs">
+      <text class="menu-icon">ℹ️</text>
+      <text class="menu-text">关于我们</text>
+      <text class="menu-arrow">></text>
+    </view>
+    <view class="menu-item" bindtap="privacyPolicy">
+      <text class="menu-icon">🛡️</text>
+      <text class="menu-text">隐私协议</text>
+      <text class="menu-arrow">></text>
+    </view>
+    <view class="menu-item" bindtap="userAgreement">
+      <text class="menu-icon">📄</text>
+      <text class="menu-text">用户协议</text>
+      <text class="menu-arrow">></text>
+    </view>
+    <view class="menu-item" bindtap="thirdPartyList">
+      <text class="menu-icon">📋</text>
+      <text class="menu-text">第三方信息共享清单</text>
+      <text class="menu-arrow">></text>
+    </view>
+    <view class="menu-item menu-item-disabled" bindtap="onlineService">
+      <text class="menu-icon">💬</text>
+      <text class="menu-text">在线客服</text>
+      <text class="menu-tag">敬请期待</text>
+    </view>
+  </view>
+
+  <view class="menu-section danger-section">
+    <view class="menu-item" bindtap="deactivateAccount">
+      <text class="menu-icon">⚠️</text>
+      <text class="menu-text menu-text-danger">注销账号</text>
+      <text class="menu-arrow">></text>
+    </view>
+  </view>
+</scroll-view>

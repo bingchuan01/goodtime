@@ -1,0 +1,68 @@
+人工以小程序模式测试时，点击提交审核没有响应（未执行上传）
+
+排查发布页“提交审核”点击无响应的原因，重点检查按钮绑定、校验和提交流程。
+正在排查并修复：先确认按钮绑定与校验逻辑，再加强提交流程的可靠性。
+修复“提交审核”点击无响应：改用 catchtap 防止点击被吞掉，并在打开确认弹窗前清除可能阻挡的 toast/loading。
+publish.wxml
++1
+-1
+    class="submit-btn"     bindtap="submitReview"    disabled="{{uploading}}"
+    bindtap="submitReview"    class="submit-btn"     catchtap="submitReview"    disabled="{{uploading}}"
+publish.js
++14
+-16
+  submitReview() {    if (!this.validateForm()) {
+  submitReview() {    // 先关闭可能残留的 toast/loading，避免遮挡或误以为无响应    wx.hideToast();    wx.hideLoading();    if (!this.validateForm()) {
+检查按钮样式是否阻挡点击（如 pointer-events、遮挡）：
+已按“提交审核无响应”做了两处修改，并顺带清理了确认弹窗逻辑。
+修改说明
+1. 按钮用 catchtap 替代 bindtap（publish.wxml）
+原因：小程序里部分机型/模拟器上，button 用 bindtap 时事件可能被父节点或滚动吸收，导致“点了没反应”。
+处理：提交按钮改为 catchtap="submitReview"，在按钮上直接消费点击，避免事件冒泡被拦截。
+2. 进入提交时先关掉 toast/loading（publish.js）
+原因：若之前有过 toast 或 loading 未关，可能挡住后续的确认弹窗，或让人误以为“点了没反应”。
+处理：在 submitReview() 开头增加：
+wx.hideToast()
+wx.hideLoading()
+再执行表单校验和弹窗。
+3. 确认弹窗逻辑微调（publish.js）
+保留 const that = this，在弹窗的 success 里用 that.doSubmitReview()，避免 this 指向问题。
+仅在 res.confirm && that && typeof that.doSubmitReview === 'function' 时再调用 doSubmitReview()，逻辑更清晰。
+请再在小程序里按真实流程测一遍：
+确保必填项都填好：轮播图、标题、分类、门店数、IP、合作金额、详情图、入驻协议图片。
+点击「提交审核」→ 应弹出「提交审核需要支付598元/年，是否继续？」。
+点「支付并提交」→ 应出现「提交中...」并开始上传。
+若仍无反应，请看是否出现“请上传xxx”“请选择xxx”等 toast：有 toast 说明点击已触发，是某条校验未通过；完全没有 toast 也没有弹窗，再考虑是否被其它元素遮挡或需要看控制台报错。
+为提交审核成功加上提示（已成功提交）
+
+发现已有成功提示“提交成功，等待审核”。将其改为更明确的“已成功提交”：
+publish.js
++1
+-1
+      this.setData({ uploading: false });      wx.showToast({ title: '提交成功，等待审核', icon: 'success', duration: 2000 });      setTimeout(() => {
+      wx.showToast({ title: '提交成功，等待审核', icon: 'success', duration: 2000 });      this.setData({ uploading: false });      wx.showToast({ title: '已成功提交', icon: 'success', duration: 2000 });      setTimeout(() => {
+已改好。提交审核成功后，会弹出 「已成功提交」 的 success 图标 toast，约 2 秒后自动跳回首页。
+提交审核功未实现，点击提交审核无法上传
+
+排查提交审核后无法上传的完整流程，定位阻断点。
+查看上传接口的 BASE_URL 及可能阻止流程的环节：
+改为在通过校验和登录检查后直接执行上传并提交，不再依赖“支付并提交”弹窗，确保点击“提交审核”即开始上传。
+publish.js
++9
+-19
+  submitReview() {    // 先关闭可能残留的 toast/loading，避免遮挡或误以为无响应    wx.hideToast();
+    // 先关闭可能残留的 toast/loading，避免遮挡或误以为无响应  submitReview() {    wx.hideToast();    // 直接执行上传并提交（支付功能未接入前不再弹支付确认框，避免点击无响应）
+已按你的需求改好了：点击「提交审核」后不再弹出支付确认框，通过校验和登录检查后直接开始上传并提交。
+修改说明
+原逻辑：点击「提交审核」→ 校验 → 弹窗「提交审核需要支付598元/年，是否继续？」→ 只有点「支付并提交」才会执行上传。
+现逻辑：点击「提交审核」→ 校验 → 不再弹支付确认，直接执行上传和提交。
+这样只要表单和登录都通过，点击一次「提交审核」就会：
+显示「提交中...」
+依次上传轮播图、详情图
+调用发布接口提交项目
+成功后再提示「已成功提交」并跳转
+支付确认框在代码里已去掉；等支付接口接好后，可以再在调用 doSubmitReview() 前加回 wx.showModal。
+请再确认：
+模拟器调试：在 utils/api.js 里把 ENV 设为 'local'，保证请求到 http://localhost:3000/api，且本机已启动后端。
+必填项：轮播图、标题、分类、门店数、IP、合作金额、详情图、入驻协议图片 都填好再点「提交审核」。
+已登录：用 13638112727 等账号先完成登录再进发布页。

@@ -1,0 +1,69 @@
+<!-- 支付页：开通会员 -->
+<navigation-bar title="支付页" back="{{true}}" color="white" background="linear-gradient(135deg, rgba(230,180,220,0.95) 0%, rgba(180,160,220,0.95) 100%)"></navigation-bar>
+
+<scroll-view class="page-container" scroll-y="{{true}}">
+  <!-- 提示词 + 权益说明 -->
+  <view class="card card-intro">
+    <text class="intro-text">会员包含多项权益，为入驻品牌提效</text>
+    <view class="intro-link" bindtap="goBenefitsDoc">
+      <text>权益说明</text>
+      <text class="arrow">></text>
+    </view>
+  </view>
+
+  <!-- V6、V8 套餐卡片（仅展示，不支持点击跳转） -->
+  <view class="card card-plans">
+    <view class="plan-row">
+      <view class="plan-card plan-v6 {{selectedPlan === 'v6' ? 'selected' : ''}}" data-plan="v6" bindtap="onSelectPlan">
+        <view class="plan-tag">V6</view>
+        <view class="plan-duration">365天</view>
+        <view class="plan-price">¥598 <text class="unit">元</text></view>
+      </view>
+      <view class="plan-card plan-v8 {{selectedPlan === 'v8' ? 'selected' : ''}}" data-plan="v8" bindtap="onSelectPlan">
+        <view class="plan-tag">V8</view>
+        <view class="plan-duration">365天</view>
+        <view class="plan-price">¥21980 <text class="unit">元</text></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 选择支付方式 -->
+  <view class="card card-payment">
+    <view class="section-title">选择支付方式</view>
+    <view class="payment-list">
+      <view class="payment-item {{paymentType === 'alipay' ? 'selected' : ''}}" data-type="alipay" bindtap="onSelectPayment">
+        <view class="radio {{paymentType === 'alipay' ? 'checked' : ''}}"></view>
+        <text class="payment-name">支付宝</text>
+      </view>
+      <view class="payment-item {{paymentType === 'wechat' ? 'selected' : ''}}" data-type="wechat" bindtap="onSelectPayment">
+        <view class="radio {{paymentType === 'wechat' ? 'checked' : ''}}"></view>
+        <text class="payment-name">微信支付</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 购买须知 -->
+  <view class="card card-notice">
+    <view class="section-title">购买须知</view>
+    <rich-text class="notice-content" nodes="{{purchaseNotice}}"></rich-text>
+  </view>
+
+  <!-- 底部占位 -->
+  <view class="bottom-placeholder"></view>
+</scroll-view>
+
+<!-- 底部：协议 + 确认支付 -->
+<view class="footer-bar">
+  <view class="agreement-row">
+    <view class="checkbox-wrap" bindtap="toggleAgreement">
+      <view class="checkbox {{agreed ? 'checked' : ''}}"></view>
+    </view>
+    <text class="agreement-text">开通前请阅读</text>
+    <text class="agreement-link" catchtap="goAgreement">《会员服务协议》</text>
+  </view>
+  <view class="v8-hint" wx:if="{{selectedPlan === 'v8'}}">V8 需联系平台开通</view>
+  <button class="btn-pay" disabled="{{!agreed}}" bindtap="onConfirmPay">
+    <text class="btn-pay-text">确认协议并支付</text>
+    <text class="btn-pay-amount">¥{{payAmount}}</text>
+  </button>
+</view>

@@ -1,10 +1,99 @@
 /**index.wxss**/
 page {
-  height: 100vh;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f5f5;
+}
+
+.page-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-top: -80rpx;
+}
+
+/* 分隔线以上：参考图毛玻璃色调（浅紫/薰衣草/天蓝/淡粉）+ 毛玻璃，高度不超出分隔线 */
+.fixed-header {
+  flex: none;
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    rgba(228, 218, 245, 0.92) 0%,
+    rgba(220, 232, 255, 0.92) 50%,
+    rgba(245, 228, 238, 0.88) 100%
+  );
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.scrollarea {
+  flex: 1;
+  height: 0;
+}
+
+/* 项目列表瀑布流布局 */
+.project-list {
+  display: flex;
+  padding: 20rpx;
+}
+
+.project-list .project-column:first-child {
+  margin-right: 20rpx;
+}
+
+.project-column {
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
-.scrollarea {
-  flex: 1;
-  overflow-y: hidden;
+
+/* 项目列表空状态 */
+.project-empty {
+  padding: 80rpx 40rpx;
+  text-align: center;
+}
+
+.project-empty .empty-desc {
+  display: block;
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 16rpx;
+}
+
+.project-empty .empty-hint {
+  display: block;
+  font-size: 22rpx;
+  color: #999;
+  line-height: 1.5;
+  margin-bottom: 32rpx;
+  padding: 0 20rpx;
+}
+
+.project-empty .empty-retry {
+  font-size: 28rpx;
+  color: #fff;
+  background: #FF6B35;
+  border: none;
+  border-radius: 40rpx;
+  padding: 20rpx 60rpx;
+}
+
+.project-empty .empty-retry::after {
+  border: none;
+}
+
+/* 加载状态 */
+.loading-more {
+  text-align: center;
+  padding: 30rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.no-more {
+  text-align: center;
+  padding: 30rpx;
+  font-size: 24rpx;
+  color: #999;
 }

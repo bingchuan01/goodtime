@@ -1,0 +1,26 @@
+<!--视频卡片组件-->
+<view class="video-card" bindtap="onTap">
+  <view class="video-cover">
+    <image class="cover-image" src="{{video.cover_url}}" mode="aspectFill"></image>
+    <view class="duration">{{formatDuration(video.duration)}}</view>
+    <view class="play-icon">▶</view>
+  </view>
+  <view class="video-info">
+    <view class="title">{{video.title}}</view>
+    <view class="meta">
+      <text class="author">{{video.author && video.author.nickname || '未知用户'}}</text>
+      <text class="separator">·</text>
+      <text class="time">{{formatTime(video.created_at)}}</text>
+    </view>
+    <view class="stats">
+      <text class="stat">👁 {{formatNumber(video.view_count || 0)}}</text>
+      <text class="stat">❤️ {{formatNumber(video.like_count || 0)}}</text>
+    </view>
+  </view>
+</view>
+
+
+
+
+
+

@@ -1,0 +1,39 @@
+/**header-logo.wxss**/
+.header-logo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 12rpx 0 0 0;
+  background-color: transparent;
+  min-height: 80rpx;
+}
+
+/* 放在导航栏内时：与右侧胶囊同一行、垂直居中，无多余留白和分隔线 */
+.header-logo_in-nav {
+  padding: 0;
+  min-height: 0;
+}
+
+.header-logo_in-nav .logo-image {
+  height: 64rpx;
+}
+
+.logo-image {
+  width: 200rpx;
+  height: 80rpx;
+}
+
+.logo-text {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #FF6B35;
+  letter-spacing: 4rpx;
+}
+
+.divider {
+  width: 100%;
+  height: 2rpx;
+  background-color: #e5e5e5;
+  margin-top: 30rpx;
+}

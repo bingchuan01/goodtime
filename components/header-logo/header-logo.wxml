@@ -1,0 +1,6 @@
+<!--header-logo.wxml-->
+<view class="header-logo {{inNav ? 'header-logo_in-nav' : ''}}">
+  <image wx:if="{{logoUrl}}" class="logo-image" src="{{logoUrl}}" mode="aspectFit" binderror="onImageError"></image>
+  <view wx:if="{{!logoUrl || imageError}}" class="logo-text">LOGO</view>
+  <view wx:if="{{!inNav}}" class="divider"></view>
+</view>

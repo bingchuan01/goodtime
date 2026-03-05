@@ -1,0 +1,38 @@
+<!--写站内信页，与首页风格一致-->
+<navigation-bar title="写站内信" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+<view class="page-wrap">
+  <view class="form-card">
+    <view class="form-item">
+      <text class="label">收件人</text>
+      <input
+        class="input"
+        placeholder="请输入收件人昵称"
+        value="{{recipientName}}"
+        disabled="{{recipientId}}"
+        bindinput="onRecipientInput"
+      />
+    </view>
+    <view class="form-item">
+      <text class="label">主题</text>
+      <input
+        class="input"
+        placeholder="请输入主题"
+        value="{{subject}}"
+        bindinput="onSubjectInput"
+      />
+    </view>
+    <view class="form-item">
+      <text class="label">正文</text>
+      <textarea
+        class="textarea"
+        placeholder="请输入正文"
+        value="{{body}}"
+        bindinput="onBodyInput"
+        maxlength="-1"
+      />
+    </view>
+  </view>
+  <view class="submit-wrap">
+    <view class="submit-btn" bindtap="onSubmit">发送</view>
+  </view>
+</view>

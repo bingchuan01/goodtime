@@ -1,0 +1,210 @@
+<!--项目详情页-->
+<view class="page-container">
+  <!-- 顶部导航栏 -->
+  <navigation-bar 
+    title="" 
+    back="{{true}}" 
+    color="white" 
+    background="transparent"
+  ></navigation-bar>
+
+  <scroll-view class="scroll-container" scroll-y="true">
+    <!-- 顶部区域：轮播图或视频 -->
+    <view class="top-media-section">
+      <!-- V6会员或V8会员选择轮播图时 -->
+      <view wx:if="{{project && project.displayType === 'carousel'}}" class="carousel-wrapper">
+        <swiper 
+          class="carousel-swiper"
+          indicator-dots="{{true}}"
+          indicator-color="rgba(255, 255, 255, 0.5)"
+          indicator-active-color="#FF6B35"
+          autoplay="{{false}}"
+          circular="{{true}}"
+          bindchange="onCarouselChange"
+        >
+          <swiper-item wx:for="{{carouselImages}}" wx:key="index">
+            <image class="carousel-image" src="{{item}}" mode="aspectFill"></image>
+          </swiper-item>
+        </swiper>
+      </view>
+
+      <!-- V8会员选择视频时 -->
+      <view wx:if="{{project && project.displayType === 'video'}}" class="video-wrapper">
+        <video
+          id="projectVideo"
+          class="project-video"
+          src="{{project.videoUrl}}"
+          poster="{{project.videoPoster}}"
+          controls="{{true}}"
+          show-center-play-btn="{{true}}"
+          enable-play-gesture="{{true}}"
+          autoplay="{{false}}"
+          bindplay="onVideoPlay"
+          bindpause="onVideoPause"
+          bindended="onVideoEnded"
+          bindfullscreenchange="onVideoFullscreen"
+        ></video>
+        <!-- 平台logo水印（右上角） -->
+        <view class="video-watermark">
+          <image class="logo-watermark" src="/images/hsjlogo.png" mode="aspectFit"></image>
+        </view>
+      </view>
+    </view>
+
+    <!-- 详情模块 -->
+    <view class="detail-section" wx:if="{{project}}">
+      <!-- 详情标题和私信按钮 -->
+      <view class="detail-header">
+        <text class="detail-title">详情</text>
+        <view class="message-btn" bindtap="onSendMessage">
+          <text>私信</text>
+        </view>
+      </view>
+
+      <!-- 发布者信息 -->
+      <view class="publisher-info">
+        <image class="publisher-avatar" src="{{project.publisher.avatar || '/images/icons/default-avatar.svg'}}" mode="aspectFill" binderror="onAvatarError"></image>
+        <view class="publisher-details">
+          <view class="publisher-name-row">
+            <text class="publisher-name">{{project.publisher.nickname}}</text>
+            <!-- 会员标签 -->
+            <view wx:if="{{project.publisher.memberLevel}}" class="member-badge member-{{project.publisher.memberLevel}}">
+              {{project.publisher.memberLevel}}
+            </view>
+            <!-- 金盾认证标签：只有V8会员支持金盾认证 -->
+            <view wx:if="{{project.isOfficial && project.memberLevel === 'V8'}}" class="official-badge">金盾认证</view>
+          </view>
+          <view class="publisher-meta">
+            <text class="publisher-ip">{{project.publisher.ip}}</text>
+            <text class="category-tag">{{project.categoryTag}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 发布类型图标和项目标题 -->
+      <view class="project-title-section">
+        <view class="publish-type-icon">
+          <!-- V6会员闪电发布图标 -->
+          <image wx:if="{{project.memberLevel === 'V6'}}" class="lightning-icon" src="/images/icons/lightning.svg" mode="aspectFit"></image>
+          <!-- V8会员高级发布图标 -->
+          <view wx:if="{{project.memberLevel === 'V8'}}" class="v8-icon">V8</view>
+        </view>
+        <text class="project-title">{{project.title}}</text>
+      </view>
+
+      <!-- 介绍 -->
+      <view class="project-introduction" wx:if="{{project.introduction}}">
+        <text class="introduction-text">{{project.introduction}}</text>
+      </view>
+
+      <!-- 数据指标 -->
+      <view class="data-stats">
+        <view class="stat-item">
+          <text class="stat-value">{{formatNumber(project.viewCount)}}</text>
+          <text class="stat-label">播放</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-value">{{project.clueCount}}</text>
+          <text class="stat-label">线索</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-value">{{project.storeCount}}</text>
+          <text class="stat-label">门店</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 详情页长页面区域 -->
+    <view class="detail-content-section">
+      <view class="detail-content-wrapper">
+        <!-- 详情内容 -->
+        <view class="detail-content">
+          <rich-text nodes="{{project.detailContent}}" wx:if="{{project.detailContent}}"></rich-text>
+          <!-- 如果没有详情内容，显示占位文本 -->
+          <view wx:else class="detail-placeholder">
+            <text>详情页长页面区域</text>
+            <text class="placeholder-desc">这里将展示项目的详细图文介绍、视频等内容</text>
+          </view>
+        </view>
+
+        <!-- 合作咨询按钮（右侧居中，非固定，随页面滚动）- 暂时隐藏，待在线客服功能完善后开放 -->
+        <view class="consult-button-wrapper" wx:if="{{false}}">
+          <view class="consult-button" bindtap="onCooperationConsult">
+            <text>合作咨询</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部免费获取品牌资料按钮 -->
+    <view class="bottom-action-section">
+      <view class="get-material-btn" bindtap="onShowForm">
+        <text>免费获取品牌资料</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 免费获取品牌资料表单弹窗 -->
+  <view wx:if="{{showForm}}" class="form-modal" bindtap="onCloseForm">
+    <view class="form-content" catchtap="">
+      <view class="form-header">
+        <text class="form-title">我想详细了解该项目</text>
+        <view class="form-close" bindtap="onCloseForm">×</view>
+      </view>
+      
+      <view class="form-body">
+        <view class="form-item">
+          <text class="form-label">姓名</text>
+          <input 
+            class="form-input" 
+            placeholder="提示可以用昵称" 
+            value="{{formData.name}}"
+            data-field="name"
+            bindinput="onFormInput"
+          />
+        </view>
+        
+        <view class="form-item">
+          <text class="form-label">手机</text>
+          <input 
+            class="form-input" 
+            type="number"
+            placeholder="请输入手机号码" 
+            value="{{formData.phone}}"
+            data-field="phone"
+            bindinput="onFormInput"
+          />
+        </view>
+        
+        <view class="form-item">
+          <text class="form-label">收件地址</text>
+          <input 
+            class="form-input" 
+            placeholder="请输入收件地址" 
+            value="{{formData.address}}"
+            data-field="address"
+            bindinput="onFormInput"
+          />
+        </view>
+        
+        <!-- 保障信息 -->
+        <view class="form-security">
+          <view class="security-item">
+            <text class="security-icon">✓</text>
+            <text class="security-text">平台保障</text>
+          </view>
+          <view class="security-item">
+            <text class="security-icon">✓</text>
+            <text class="security-text">隐私安全</text>
+          </view>
+        </view>
+      </view>
+      
+      <view class="form-footer">
+        <view class="submit-btn" bindtap="onSubmitForm">
+          <text>提交咨询</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

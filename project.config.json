@@ -26,10 +26,15 @@
   "compileType": "miniprogram",
   "simulatorPluginLibVersion": {},
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "server"
+      }
+    ],
     "include": []
   },
-  "appid": "wxbbb362d97a2e2c04",
+  "appid": "wx47b89dd42114668b",
   "editorSetting": {},
   "libVersion": "3.13.0"
 }

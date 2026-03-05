@@ -1,5 +1,11 @@
 {
+  "navigationStyle": "custom",
   "usingComponents": {
-    "navigation-bar": "/components/navigation-bar/navigation-bar"
+    "navigation-bar": "/components/navigation-bar/navigation-bar",
+    "header-logo": "/components/header-logo/header-logo",
+    "data-dashboard": "/components/data-dashboard/data-dashboard",
+    "search-bar": "/components/search-bar/search-bar",
+    "category-nav": "/components/category-nav/category-nav",
+    "project-card": "/components/project-card/project-card"
   }
 }

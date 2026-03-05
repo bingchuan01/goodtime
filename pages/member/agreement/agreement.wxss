@@ -1,0 +1,21 @@
+page {
+  min-height: 100vh;
+  background: #fff;
+}
+
+.container {
+  height: 100vh;
+  padding: 30rpx;
+  padding-top: calc(var(--status-bar-height, 44rpx) + 88rpx);
+  box-sizing: border-box;
+}
+
+.content-wrap {
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.8;
+}
+
+.content-wrap p {
+  margin-bottom: 20rpx;
+}

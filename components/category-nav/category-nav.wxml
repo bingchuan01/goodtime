@@ -1,0 +1,19 @@
+<!--category-nav.wxml-->
+<scroll-view class="category-nav" scroll-x="{{true}}" show-scrollbar="{{false}}" enable-flex="{{true}}">
+  <view class="category-track">
+  <view class="category-item {{currentIndex === index ? 'active' : ''}}" 
+        wx:for="{{categoryList}}" 
+        wx:key="id"
+        wx:for-index="index"
+        wx:for-item="item"
+        bindtap="onCategoryTap"
+        data-index="{{index}}"
+        data-id="{{item.id}}">
+    <view class="icon-wrapper">
+      <image class="icon" src="{{item.icon}}" mode="aspectFit" binderror="onIconError" data-index="{{index}}"></image>
+      <text class="icon-fallback" wx:if="{{item.iconError}}">📁</text>
+    </view>
+    <text class="label">{{item.name}}</text>
+  </view>
+  </view>
+</scroll-view>
