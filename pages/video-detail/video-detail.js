@@ -6,7 +6,9 @@ Page({
   data: {
     projectId: null,
     project: null,
+    showContent: false, // 仅 onReady 后为 true，避免过渡动画期间渲染导致底部图片闪现
     loading: false,
+    loadError: false,
     // 轮播图相关
     carouselImages: [],
     currentCarouselIndex: 0,
@@ -36,7 +38,6 @@ Page({
       return;
     }
 
-    // 获取传递的项目信息，用于正确判断展示类型
     const coverType = decodeURIComponent(options.coverType || 'image');
     const memberLevel = decodeURIComponent(options.memberLevel || '');
 
@@ -45,46 +46,69 @@ Page({
       coverType,
       memberLevel
     });
+
+    const prefetched = getApp().globalData.prefetchedProject;
+    if (prefetched && prefetched.id === String(projectId) && prefetched.data) {
+      getApp().globalData.prefetchedProject = null;
+      this.applyProjectData(prefetched.data);
+      return;
+    }
     this.loadProjectDetail();
   },
 
   onReady() {
-    // 创建视频上下文（如果存在视频）
     this.videoContext = wx.createVideoContext('projectVideo', this);
+    // 延迟至过渡动画结束后再显示内容，避免底部详情图在切换时闪现
+    setTimeout(() => {
+      this.setData({ showContent: true });
+    }, 350);
   },
 
-  // 加载项目详情（对接 API）
-  async loadProjectDetail() {
+  applyProjectData(project) {
+    if (!project) return;
+    if (project.publisher && !project.publisher.avatar) {
+      project.publisher.avatar = '/images/icons/default-avatar.svg';
+    }
+    if (project.memberLevel === 'V8' && project.coverType === 'video' && project.videoUrl) {
+      this.setData({
+        project: { ...project, displayType: 'video' },
+        loading: false
+      });
+    } else {
+      this.setData({
+        project: { ...project, displayType: 'carousel', carouselImages: project.carouselImages || [] },
+        carouselImages: project.carouselImages || [],
+        loading: false
+      });
+    }
+  },
+
+  // 加载项目详情（对接 API），无预取数据时调用
+  async loadProjectDetail(isRetry) {
     try {
-      this.setData({ loading: true });
-      wx.showLoading({ title: '加载中...' });
+      this.setData({ loading: true, loadError: false });
+      if (!isRetry) wx.showLoading({ title: '加载中...' });
       const project = await api.getProjectDetail(this.data.projectId);
       if (!project) {
         wx.showToast({ title: '项目不存在', icon: 'none' });
         setTimeout(() => wx.navigateBack(), 1500);
         return;
       }
-      if (project.publisher && !project.publisher.avatar) {
-        project.publisher.avatar = '/images/icons/default-avatar.svg';
-      }
-      if (project.memberLevel === 'V8' && project.coverType === 'video' && project.videoUrl) {
-        this.setData({
-          project: { ...project, displayType: 'video' },
-          loading: false
-        });
-      } else {
-        this.setData({
-          project: { ...project, displayType: 'carousel', carouselImages: project.carouselImages || [] },
-          carouselImages: project.carouselImages || [],
-          loading: false
-        });
-      }
+      this.applyProjectData(project);
       wx.hideLoading();
     } catch (error) {
       wx.hideLoading();
-      this.setData({ loading: false });
-      wx.showToast({ title: '加载失败', icon: 'none' });
+      if (!isRetry) {
+        setTimeout(() => this.loadProjectDetail(true), 500);
+      } else {
+        this.setData({ loading: false, loadError: true });
+        wx.showToast({ title: '加载失败', icon: 'none' });
+      }
     }
+  },
+
+  onRetryLoad() {
+    this.loadProjectDetail();
   },
 
   // 轮播图切换

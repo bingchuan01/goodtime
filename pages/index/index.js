@@ -157,13 +157,23 @@ Page({
     })
   },
   
-  // 项目卡片点击（project 由 project-card 传入，用于详情页判断展示类型）
-  onProjectTap(e) {
+  // 项目卡片点击：在首页先请求详情再跳转，真机首次在详情页请求易失败
+  async onProjectTap(e) {
     const { projectId, project } = e.detail;
+    if (!projectId) return;
     const coverType = (project && project.coverType) || 'image';
     const memberLevel = (project && project.memberLevel) || '';
-    wx.navigateTo({
-      url: `/pages/video-detail/video-detail?id=${projectId}&coverType=${encodeURIComponent(coverType)}&memberLevel=${encodeURIComponent(memberLevel)}`
-    });
+    wx.showLoading({ title: '加载中...' });
+    try {
+      const detail = await api.getProjectDetail(projectId);
+      getApp().globalData.prefetchedProject = { id: String(projectId), data: detail };
+      wx.hideLoading();
+      wx.navigateTo({
+        url: `/pages/video-detail/video-detail?id=${projectId}&coverType=${encodeURIComponent(coverType)}&memberLevel=${encodeURIComponent(memberLevel)}`
+      });
+    } catch (err) {
+      wx.hideLoading();
+      wx.showToast({ title: '加载失败', icon: 'none' });
+    }
   }
 });

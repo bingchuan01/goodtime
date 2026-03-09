@@ -9,11 +9,24 @@
   ></navigation-bar>
 
   <scroll-view class="scroll-container" scroll-y="true">
-    <!-- 顶部区域：轮播图或视频 -->
-    <view class="top-media-section">
+    <!-- 加载失败：重试 -->
+    <view wx:if="{{loadError}}" class="load-error-section">
+      <text class="load-error-desc">加载失败，请检查网络</text>
+      <view class="load-error-retry" bindtap="onRetryLoad">重试</view>
+    </view>
+
+    <!-- 正常内容（非加载失败时显示，有数据才渲染避免底部内容闪现） -->
+    <block wx:if="{{!loadError}}">
+    <!-- 加载中占位（无数据或页面未就绪时显示） -->
+    <view wx:if="{{!project || !showContent}}" class="loading-placeholder">
+      <text>加载中...</text>
+    </view>
+    <!-- 顶部区域：轮播图或视频（有 project 且页面就绪才显示，避免过渡动画期间闪现） -->
+    <view wx:if="{{project && showContent}}" class="top-media-section">
       <!-- V6会员或V8会员选择轮播图时 -->
       <view wx:if="{{project && project.displayType === 'carousel'}}" class="carousel-wrapper">
         <swiper 
+          wx:if="{{carouselImages.length > 0}}"
           class="carousel-swiper"
           indicator-dots="{{true}}"
           indicator-color="rgba(255, 255, 255, 0.5)"
@@ -26,6 +39,9 @@
             <image class="carousel-image" src="{{item}}" mode="aspectFill"></image>
           </swiper-item>
         </swiper>
+        <view wx:else class="carousel-placeholder">
+          <image class="carousel-placeholder-img" src="/images/placeholder.svg" mode="aspectFit"></image>
+        </view>
       </view>
 
       <!-- V8会员选择视频时 -->
@@ -52,7 +68,7 @@
     </view>
 
     <!-- 详情模块 -->
-    <view class="detail-section" wx:if="{{project}}">
+    <view wx:if="{{project && showContent}}" class="detail-section">
       <!-- 详情标题和私信按钮 -->
       <view class="detail-header">
         <text class="detail-title">详情</text>
@@ -115,7 +131,7 @@
     </view>
 
     <!-- 详情页长页面区域 -->
-    <view class="detail-content-section">
+    <view wx:if="{{project && showContent}}" class="detail-content-section">
       <view class="detail-content-wrapper">
         <!-- 详情内容 -->
         <view class="detail-content">
@@ -137,11 +153,12 @@
     </view>
 
     <!-- 底部免费获取品牌资料按钮 -->
-    <view class="bottom-action-section">
+    <view wx:if="{{project && showContent}}" class="bottom-action-section">
       <view class="get-material-btn" bindtap="onShowForm">
         <text>免费获取品牌资料</text>
       </view>
     </view>
+    </block>
   </scroll-view>
 
   <!-- 免费获取品牌资料表单弹窗 -->
