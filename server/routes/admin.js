@@ -350,7 +350,7 @@ router.get('/config/:key', adminAuth, (req, res) => {
     const key = String(req.params.key || '').trim();
     const row = db.prepare('SELECT value FROM config WHERE key = ?').get(key);
     let value = row ? row.value : null;
-    if (value && (key === 'dashboard' || key === 'benefits_carousel')) {
+    if (value && (key === 'dashboard' || key === 'benefits_carousel' || key === 'member_plans')) {
       try {
         value = JSON.parse(value);
       } catch (e) {}

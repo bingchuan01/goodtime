@@ -2,12 +2,47 @@ const express = require('express');
 const router = express.Router();
 const { db, ensureUser } = require('../db');
 
+function normalizeCoverUrl(url) {
+  if (!url) return '';
+  let out = String(url).trim();
+  if (!out) return '';
+  // 已是 https，直接返回（真机只允许 https）
+  if (out.indexOf('https://') === 0) return out;
+  // 协议相对链接
+  if (out.indexOf('//') === 0) return 'https:' + out;
+  // 早期 http 的 api.goodtime.work 升级为 https
+  if (out.indexOf('http://api.goodtime.work') === 0) return out.replace('http://', 'https://');
+  // localhost / 内网 URL：真机无法访问，只保留路径拼上线上域名（需服务器 uploads 已同步）
+  const prodBase = process.env.UPLOAD_BASE_URL || 'https://api.goodtime.work';
+  if (out.indexOf('http://localhost') === 0 || out.indexOf('http://127.0.0.1') === 0 || out.indexOf('http://192.168.') === 0) {
+    try {
+      const u = new URL(out);
+      const path = u.pathname || '';
+      if (path.indexOf('/uploads/') === 0) return prodBase + path;
+    } catch (e) {}
+  }
+  // 其他 http：若路径含 /uploads/ 则用 prodBase 替换域名，避免代理/环境差异导致封面丢失
+  if (out.indexOf('http://') === 0) {
+    try {
+      const u = new URL(out);
+      const path = u.pathname || '';
+      if (path.indexOf('/uploads/') === 0) return prodBase + path;
+    } catch (e) {}
+    return '';
+  }
+  return out;
+}
+
 function projectToListRow(p) {
   const publisher = db.prepare('SELECT id, nickname, avatar, member_level FROM users WHERE id = ?').get(p.user_id);
   let carouselImages = [];
   try {
     carouselImages = JSON.parse(p.carousel_images || '[]');
   } catch (e) {}
+  const rawCoverUrl = (Array.isArray(carouselImages) && carouselImages.length > 0)
+    ? carouselImages[0]
+    : (p.video_poster || '');
+  const coverUrl = normalizeCoverUrl(rawCoverUrl);
   return {
     id: String(p.id),
     title: p.title,
@@ -19,9 +54,9 @@ function projectToListRow(p) {
     isOfficial: !!p.is_official,
     memberLevel: p.member_level || '',
     coverType: p.cover_type || 'image',
-    coverUrl: carouselImages[0] || p.video_poster || '',
+    coverUrl,
     videoUrl: p.video_url || '',
-    videoPoster: p.video_poster || '',
+    videoPoster: normalizeCoverUrl(p.video_poster || ''),
     publisher: publisher ? {
       id: publisher.id,
       nickname: publisher.nickname || '未知',
@@ -36,12 +71,34 @@ function projectToListRow(p) {
   };
 }
 
+function normalizeDetailContent(html) {
+  if (!html || typeof html !== 'string') return '';
+  const prodBase = process.env.UPLOAD_BASE_URL || 'https://api.goodtime.work';
+  let s = html
+    .replace(/http:\/\/api\.goodtime\.work/g, 'https://api.goodtime.work')
+    .replace(/http:\/\/localhost(:\d+)?/g, prodBase)
+    .replace(/http:\/\/127\.0\.0\.1(:\d+)?/g, prodBase)
+    .replace(/http:\/\/192\.168\.\d+\.\d+(:\d+)?/g, prodBase);
+  // 详情图在真机居中：为 img 补全居中样式，避免偏左、右侧留白
+  s = s.replace(/<img(\s[^>]*?)style="([^"]*)"([^>]*)>/gi, (match, before, style, after) => {
+    const center = 'display:block;margin-left:auto;margin-right:auto;';
+    if (/display\s*:\s*block/i.test(style) && /margin-left\s*:\s*auto/i.test(style)) return match;
+    const newStyle = style.trim() ? style + ';' + center : center;
+    return `<img${before}style="${newStyle}"${after}>`;
+  });
+  s = s.replace(/<img(?=\s)(?![^>]*style=)/gi, (m) => m + ' style="max-width:100%;display:block;margin-left:auto;margin-right:auto;"');
+  return s;
+}
+
 function projectToDetailRow(p) {
   const publisher = db.prepare('SELECT id, nickname, avatar, member_level FROM users WHERE id = ?').get(p.user_id);
   let carouselImages = [];
   try {
     carouselImages = JSON.parse(p.carousel_images || '[]');
   } catch (e) {}
+  const normalizedCarousel = Array.isArray(carouselImages)
+    ? carouselImages.map((url) => normalizeCoverUrl(url)).filter(Boolean)
+    : [];
   return {
     id: String(p.id),
     title: p.title,
@@ -52,10 +109,10 @@ function projectToDetailRow(p) {
     categoryTag: p.category_tag || p.category_id || '',
     categoryId: p.category_id || '',
     coverType: p.cover_type || 'carousel',
-    carouselImages,
-    videoUrl: p.video_url || '',
-    videoPoster: p.video_poster || '',
-    detailContent: p.detail_content || '',
+    carouselImages: normalizedCarousel,
+    videoUrl: normalizeCoverUrl(p.video_url || ''),
+    videoPoster: normalizeCoverUrl(p.video_poster || ''),
+    detailContent: normalizeDetailContent(p.detail_content || ''),
     introduction: p.introduction || '',
     memberLevel: p.member_level || 'V6',
     isOfficial: !!p.is_official,

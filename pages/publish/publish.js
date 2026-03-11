@@ -208,23 +208,31 @@ Page({
         const tempFiles = res.tempFilePaths;
         const validFiles = [];
         
-        tempFiles.forEach((filePath, index) => {
-          // 获取图片信息
+        let doneCount = 0;
+        const tryFinish = () => {
+          doneCount++;
+          if (doneCount === tempFiles.length) {
+            if (validFiles.length > 0) {
+              this.setData({
+                carouselImages: [...this.data.carouselImages, ...validFiles]
+              });
+            } else {
+              wx.showToast({ title: '图片加载失败，请重试', icon: 'none' });
+            }
+          }
+        };
+        tempFiles.forEach((filePath) => {
           wx.getImageInfo({
             src: filePath,
             success: (imgInfo) => {
-              // 验证格式
-              const ext = filePath.substring(filePath.lastIndexOf('.')).toLowerCase();
-              if (!['.jpg', '.jpeg', '.png'].includes(ext)) {
+              const ext = (filePath.substring(filePath.lastIndexOf('.')) || '').toLowerCase();
+              if (!['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
                 wx.showModal({
-                  title: '格式错误',
-                  content: '仅支持JPG、JPEG、PNG格式',
+                  title: '格式提示',
+                  content: '建议使用 JPG/PNG 格式，当前格式可能影响展示',
                   showCancel: false
                 });
-                return;
               }
-
-              // 验证尺寸比例（16:9）
               const ratio = imgInfo.width / imgInfo.height;
               const targetRatio = 16 / 9;
               if (Math.abs(ratio - targetRatio) > 0.1) {
@@ -234,21 +242,13 @@ Page({
                   showCancel: false
                 });
               }
-
               validFiles.push(filePath);
-              
-              // 所有文件验证完成
-              if (validFiles.length === tempFiles.length) {
-                this.setData({
-                  carouselImages: [...this.data.carouselImages, ...validFiles]
-                });
-              }
+              tryFinish();
             },
             fail: () => {
-              wx.showToast({
-                title: '图片加载失败',
-                icon: 'none'
-              });
+              // getImageInfo 失败时仍尝试添加（上传接口可处理），避免真机/工具差异导致选图失败
+              validFiles.push(filePath);
+              tryFinish();
             }
           });
         });
@@ -741,30 +741,36 @@ Page({
       let videoPoster = '';
       const coverType = this.data.publishType === 'advanced' && this.data.uploadType === 'video' ? 'video' : 'carousel';
 
+      // 已上传的远程 URL（API 或 OSS）直接使用，本地路径走 OSS 直传或接口上传
+      const isRealRemoteUrl = (url) => url && typeof url === 'string' &&
+        (url.indexOf('api.goodtime.work') !== -1 || url.indexOf('aliyuncs.com') !== -1 || (url.indexOf('/uploads/') !== -1 && url.indexOf('https://') === 0));
+      const getUrl = (res) => (res && res.url) || (res && res.data && res.data.url);
+
       if (coverType === 'carousel') {
         for (const path of this.data.carouselImages) {
-          if (typeof path === 'string' && path.indexOf('http') === 0) {
+          if (isRealRemoteUrl(path)) {
             carouselUrls.push(path);
           } else {
-            const res = await api.uploadFile('/upload', path, {});
-            if (res && res.url) carouselUrls.push(res.url);
+            const res = await api.uploadFileOrOss(path, '.jpg');
+            const url = getUrl(res);
+            if (url) carouselUrls.push(url);
           }
         }
-        if (carouselUrls.length === 0) throw new Error('轮播图上传失败');
+        if (carouselUrls.length === 0) throw new Error('轮播图上传失败，请检查网络后重试');
       } else {
-        const isRemoteVideo = typeof this.data.videoPath === 'string' && this.data.videoPath.indexOf('http') === 0;
+        const isRemoteVideo = isRealRemoteUrl(this.data.videoPath);
         if (isRemoteVideo) {
           videoUrl = this.data.videoPath;
           videoPoster = this.data.videoCoverPath || this.data.editingVideoPoster || '';
         } else {
           if (this.data.videoPath) {
-            const vRes = await api.uploadFile('/upload', this.data.videoPath, {});
-            if (vRes && vRes.url) videoUrl = vRes.url;
+            const vRes = await api.uploadFileOrOss(this.data.videoPath, '.mp4');
+            videoUrl = getUrl(vRes);
             if (!videoUrl) throw new Error('视频上传失败');
           }
-          if (this.data.videoCoverPath && this.data.videoCoverPath.indexOf('http') !== 0) {
-            const pRes = await api.uploadFile('/upload', this.data.videoCoverPath, {});
-            if (pRes && pRes.url) videoPoster = pRes.url;
+          if (this.data.videoCoverPath && !isRealRemoteUrl(this.data.videoCoverPath)) {
+            const pRes = await api.uploadFileOrOss(this.data.videoCoverPath, '.jpg');
+            videoPoster = getUrl(pRes);
           } else if (this.data.videoCoverPath) {
             videoPoster = this.data.videoCoverPath;
           }
@@ -773,11 +779,12 @@ Page({
 
       const detailImgUrls = [];
       for (const path of this.data.detailImages) {
-        const res = await api.uploadFile('/upload', path, {});
-        if (res && res.url) detailImgUrls.push(res.url);
+        const res = await api.uploadFileOrOss(path, '.jpg');
+        const url = getUrl(res);
+        if (url) detailImgUrls.push(url);
       }
       const detailContent = detailImgUrls.length
-        ? detailImgUrls.map(url => `<p><img src="${url}" style="max-width:100%;" /></p>`).join('')
+        ? detailImgUrls.map(url => `<p><img src="${url}" style="max-width:100%;display:block;margin-left:auto;margin-right:auto;" /></p>`).join('')
         : (isEdit ? (this.data.editingDetailContent || '') : '');
 
       const payload = {

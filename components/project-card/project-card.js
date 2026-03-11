@@ -1,4 +1,6 @@
 // project-card.js
+const COVER_PLACEHOLDER = '/images/placeholder.svg';
+
 Component({
   properties: {
     project: {
@@ -7,9 +9,18 @@ Component({
     }
   },
   data: {
-    
+    displayCoverUrl: COVER_PLACEHOLDER
+  },
+  observers: {
+    'project': function (project) {
+      const url = (project && project.coverUrl) ? String(project.coverUrl).trim() : '';
+      this.setData({ displayCoverUrl: url || COVER_PLACEHOLDER });
+    }
   },
   methods: {
+    onCoverError() {
+      this.setData({ displayCoverUrl: COVER_PLACEHOLDER });
+    },
     onCardTap() {
       const projectId = this.data.project.id
       const project = this.data.project

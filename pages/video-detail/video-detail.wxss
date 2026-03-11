@@ -9,8 +9,7 @@
 
 .scroll-container {
   height: 100vh;
-  padding-top: var(--status-bar-height, 44rpx);
-  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
+  padding: var(--status-bar-height, 44rpx) 30rpx calc(120rpx + env(safe-area-inset-bottom)) 30rpx;
   box-sizing: border-box;
 }
 
@@ -320,6 +319,8 @@
 }
 
 .detail-content {
+  width: 100%;
+  box-sizing: border-box;
   font-size: 28rpx;
   color: #333;
   line-height: 1.8;

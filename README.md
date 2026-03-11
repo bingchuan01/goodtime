@@ -59,11 +59,20 @@ const BASE_URL = 'https://your-api-domain.com/api';
 
 根据 `技术方案.md` 中的API设计文档，开发对应的后端接口。
 
-### 4. 云存储配置
+### 4. 云存储配置（阿里云 OSS 直传，可选）
 
-视频文件需要上传到云存储（推荐腾讯云COS）：
-1. 在 `pages/publish/publish.js` 中配置上传逻辑
-2. 后端需要提供获取上传凭证的接口
+启用 OSS 后，轮播图/视频/详情图直传 OSS，避免经 API 转发触发 413。
+
+**后端（server）环境变量**（在阿里云 OSS 控制台获取）：
+- `OSS_REGION`：如 `cn-hangzhou`
+- `OSS_BUCKET`：桶名称
+- `OSS_ACCESS_KEY_ID` / `OSS_ACCESS_KEY_SECRET`：访问密钥
+- 可选 `OSS_HOST`：不设则用 `https://${OSS_BUCKET}.oss-${OSS_REGION}.aliyuncs.com`
+- 可选 `OSS_MAX_SIZE`：单文件上限字节，默认 10MB
+
+**小程序**：在「开发管理 → 开发设置 → 服务器域名」中，将 **uploadFile 合法域名** 增加你的 OSS 外网域名（如 `https://你的桶.oss-cn-hangzhou.aliyuncs.com`）。
+
+未配置 OSS 时，发布页会自动回退到原 `/upload` 接口上传。
 
 ## 核心功能说明
 

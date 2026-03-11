@@ -2,6 +2,22 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../db');
 
+const DEFAULT_PLANS = [
+  { id: 'v6', name: 'V6', price: 598, days: 365 },
+  { id: 'v8', name: 'V8', price: 21980, days: 365 }
+];
+
+function getMemberPlans() {
+  const row = db.prepare('SELECT value FROM config WHERE key = ?').get('member_plans');
+  if (!row || !row.value) return DEFAULT_PLANS;
+  try {
+    const plans = JSON.parse(row.value);
+    return Array.isArray(plans) && plans.length > 0 ? plans : DEFAULT_PLANS;
+  } catch (e) {
+    return DEFAULT_PLANS;
+  }
+}
+
 /** 会员信息 */
 router.get('/info', (req, res) => {
   try {
@@ -21,14 +37,11 @@ router.get('/info', (req, res) => {
   }
 });
 
-/** 会员等级列表 */
+/** 会员等级列表（价格从后台配置读取） */
 router.get('/levels', (req, res) => {
   res.json({
     code: 0,
-    data: [
-      { id: 'v6', name: 'V6', price: 598, days: 365 },
-      { id: 'v8', name: 'V8', price: 21980, days: 365 }
-    ],
+    data: getMemberPlans(),
     message: 'ok'
   });
 });
@@ -38,7 +51,7 @@ router.get('/benefits', (req, res) => {
   res.json({ code: 0, data: [], message: 'ok' });
 });
 
-/** 创建会员订单（V6，返回支付参数占位） */
+/** 创建会员订单（V6，返回支付参数占位；金额从配置读取） */
 router.post('/order', (req, res) => {
   try {
     const userId = req.userId;
@@ -46,7 +59,9 @@ router.post('/order', (req, res) => {
     if (plan !== 'v6') {
       return res.status(400).json({ code: 400, message: 'V8 需联系平台开通' });
     }
-    const amount = 598;
+    const plans = getMemberPlans();
+    const planObj = plans.find(p => p.id === plan);
+    const amount = (planObj && typeof planObj.price === 'number') ? planObj.price : 598;
     const run = db.prepare('INSERT INTO orders (user_id, plan, amount, status) VALUES (?, ?, ?, ?)').run(userId, plan, amount, 'pending');
     const orderId = run.lastInsertRowid;
     res.status(201).json({

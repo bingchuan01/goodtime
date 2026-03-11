@@ -1,13 +1,14 @@
-// 支付页：开通会员（选择支付方式、确认协议并支付）
+// 支付页：开通会员（选择支付方式、确认协议并支付）；价格从接口获取，支持后台自由调整
 const api = require('../../../utils/api');
 
-const PLANS = {
-  v6: { price: 598, name: 'V6', days: 365 },
-  v8: { price: 21980, name: 'V8', days: 365 }
-};
+const DEFAULT_PLANS = [
+  { id: 'v6', name: 'V6', price: 598, days: 365 },
+  { id: 'v8', name: 'V8', price: 21980, days: 365 }
+];
 
 Page({
   data: {
+    plans: DEFAULT_PLANS,
     selectedPlan: 'v6',
     payAmount: 598,
     paymentType: 'wechat',
@@ -21,14 +22,33 @@ Page({
         this.setData({ purchaseNotice: content });
       }
     }).catch(() => {});
+
+    api.getMemberLevels().then(res => {
+      const list = (res && res.data && Array.isArray(res.data)) ? res.data : DEFAULT_PLANS;
+      if (list.length === 0) return;
+      const plans = list.map(p => ({
+        id: p.id,
+        name: p.name || p.id,
+        price: typeof p.price === 'number' ? p.price : Number(p.price) || 0,
+        days: typeof p.days === 'number' ? p.days : Number(p.days) || 365
+      }));
+      const first = plans[0];
+      this.setData({
+        plans,
+        selectedPlan: first.id,
+        payAmount: first.price
+      });
+    }).catch(() => {});
   },
 
   onSelectPlan(e) {
-    const plan = e.currentTarget.dataset.plan;
-    if (!plan || !PLANS[plan]) return;
+    const planId = e.currentTarget.dataset.plan;
+    const plans = this.data.plans || [];
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
     this.setData({
-      selectedPlan: plan,
-      payAmount: PLANS[plan].price
+      selectedPlan: planId,
+      payAmount: plan.price
     });
   },
 
@@ -64,8 +84,8 @@ Page({
       wx.showToast({ title: '需联系平台开通', icon: 'none' });
       return;
     }
-    const { payAmount, paymentType } = this.data;
-    const planInfo = PLANS[selectedPlan];
+    const { payAmount, paymentType, plans } = this.data;
+    const planInfo = (plans || []).find(p => p.id === selectedPlan) || { name: selectedPlan, days: 365 };
     const that = this;
     wx.showModal({
       title: '确认支付',

@@ -353,6 +353,17 @@ async function init() {
     save();
   }
 
+  // 会员定价配置（若不存在则写入默认值，兼容已有数据库）
+  const memberPlansRow = db.prepare('SELECT value FROM config WHERE key = ?').get('member_plans');
+  if (!memberPlansRow) {
+    const defaultPlans = JSON.stringify([
+      { id: 'v6', name: 'V6', price: 598, days: 365 },
+      { id: 'v8', name: 'V8', price: 21980, days: 365 }
+    ]);
+    db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run('member_plans', defaultPlans);
+    save();
+  }
+
   const adminCount = countByExec('SELECT COUNT(*) as c FROM admin_users');
   if (adminCount && adminCount.c === 0) {
     const crypto = require('crypto');

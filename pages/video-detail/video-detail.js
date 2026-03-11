@@ -182,6 +182,10 @@ Page({
     this.setData({ showForm: false });
   },
 
+  // 阻止冒泡：点击表单区域时不关闭弹窗，便于在输入框中录入
+  onPreventClose() {},
+
+
   // 表单输入
   onFormInput(e) {
     const { field } = e.currentTarget.dataset;

@@ -1,0 +1,10 @@
+<view class="container" style="padding-top: {{safeTop}}px;" bindtap="goHome">
+  <image
+    class="splash"
+    src="{{src}}"
+    mode="aspectFill"
+    style="height: {{windowHeight - safeTop}}px;"
+    binderror="onImageError"
+  />
+</view>
+

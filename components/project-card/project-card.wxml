@@ -1,13 +1,14 @@
 <!--project-card.wxml-->
 <view class="project-card" bindtap="onCardTap">
-  <!-- 封面区域 -->
+  <!-- 封面区域：无封面或加载失败时显示占位图，真机只支持 https -->
   <view class="cover-wrapper">
     <image wx:if="{{project.coverType === 'image' || project.coverType === 'carousel'}}" 
            class="cover-image" 
-           src="{{project.coverUrl}}" 
-           mode="aspectFill"></image>
+           src="{{displayCoverUrl}}" 
+           mode="aspectFill"
+           binderror="onCoverError"></image>
     <view wx:if="{{project.coverType === 'video'}}" class="video-cover">
-      <image class="cover-image" src="{{project.coverUrl}}" mode="aspectFill"></image>
+      <image class="cover-image" src="{{displayCoverUrl}}" mode="aspectFill" binderror="onCoverError"></image>
       <!-- V6会员不支持视频，不显示播放图标和时长 -->
       <view wx:if="{{project.memberLevel !== 'V6'}}" class="play-icon"><view class="play-triangle"></view></view>
       <view wx:if="{{project.memberLevel !== 'V6'}}" class="duration">{{project.videoDuration}}</view>

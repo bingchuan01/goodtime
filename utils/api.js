@@ -117,7 +117,7 @@ function del(url, data = {}) {
 }
 
 /**
- * 文件上传
+ * 文件上传（走当前 API 域名）
  */
 function uploadFile(url, filePath, formData = {}, onProgress = null) {
   return new Promise((resolve, reject) => {
@@ -177,6 +177,69 @@ function uploadFile(url, filePath, formData = {}, onProgress = null) {
         reject(error);
       }
     });
+  });
+}
+
+/**
+ * 获取 OSS 直传凭证（后端未配置 OSS 时返回 501，不弹 toast）
+ */
+function getOssUploadPolicy(ext) {
+  return get('/upload/oss-policy', { ext: ext || '.jpg' }, {}, true)
+    .then(function (data) {
+      return data && data.host ? data : null;
+    })
+    .catch(function (err) {
+      if (err && (err.code === 501 || err.statusCode === 501)) return Promise.resolve(null);
+      return Promise.reject(err);
+    });
+}
+
+/**
+ * 直传文件到 OSS（PostObject）。需先把 OSS 桶域名加入小程序 uploadFile 合法域名。
+ */
+function uploadFileToOss(filePath, policyData) {
+  return new Promise((resolve, reject) => {
+    wx.uploadFile({
+      url: policyData.host,
+      filePath: filePath,
+      name: 'file',
+      formData: {
+        key: policyData.key,
+        policy: policyData.policy,
+        OSSAccessKeyId: policyData.OSSAccessKeyId,
+        signature: policyData.signature,
+        success_action_status: '200'
+      },
+      success: (res) => {
+        if (res.statusCode === 200) {
+          resolve({ url: policyData.url });
+        } else {
+          reject(new Error(res.statusCode === 413 ? '文件过大' : ('上传失败 ' + res.statusCode)));
+        }
+      },
+      fail: (err) => {
+        const msg = (err && err.errMsg) || '上传失败';
+        if (msg.indexOf('domain') !== -1 || msg.indexOf('url not in') !== -1) {
+          reject(new Error('请将 OSS 桶域名加入小程序 uploadFile 合法域名'));
+        } else {
+          reject(new Error(msg));
+        }
+      }
+    });
+  });
+}
+
+/**
+ * 优先 OSS 直传，不可用时回退到接口上传（避免 413）
+ * @param {string} filePath - 本地路径
+ * @param {string} [ext] - 扩展名，如 '.jpg' / '.mp4'，默认 '.jpg'
+ * @returns {Promise<{url: string}>}
+ */
+function uploadFileOrOss(filePath, ext) {
+  ext = ext || '.jpg';
+  return getOssUploadPolicy(ext).then(function (policyData) {
+    if (policyData) return uploadFileToOss(filePath, policyData);
+    return uploadFile('/upload', filePath, {});
   });
 }
 
@@ -456,7 +519,10 @@ module.exports = {
   put,
   del,
   uploadFile,
-  
+  uploadFileOrOss,
+  getOssUploadPolicy,
+  uploadFileToOss,
+
   // 用户相关
   wxLogin,
   getUserInfo,

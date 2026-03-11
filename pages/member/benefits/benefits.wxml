@@ -13,7 +13,8 @@
       <view class="member-status" wx:if="{{isMember}}">会员有效期至 {{memberExpireText}}</view>
       <view class="member-status" wx:else>尚未开通</view>
     </view>
-    <button class="btn-open" bindtap="goUpgrade">立即开通</button>
+    <button class="btn-open" bindtap="goUpgrade" wx:if="{{isMember}}">续费/升级会员</button>
+    <button class="btn-open" bindtap="goUpgrade" wx:else>立即开通</button>
   </view>
 
   <!-- 会员权益：宫格，红翅膀=可享 -->
@@ -75,5 +76,6 @@
 
 <!-- 吸底：立即开通会员 -->
 <view class="footer-bar {{showFooterBar ? 'show' : ''}}">
-  <button class="btn-footer" bindtap="goUpgrade">立即开通会员</button>
+  <button class="btn-footer" bindtap="goUpgrade" wx:if="{{isMember}}">续费/升级会员</button>
+  <button class="btn-footer" bindtap="goUpgrade" wx:else>立即开通会员</button>
 </view>

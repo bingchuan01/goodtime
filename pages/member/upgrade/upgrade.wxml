@@ -11,18 +11,13 @@
     </view>
   </view>
 
-  <!-- V6、V8 套餐卡片（仅展示，不支持点击跳转） -->
+  <!-- 会员套餐卡片（价格从后台配置拉取） -->
   <view class="card card-plans">
     <view class="plan-row">
-      <view class="plan-card plan-v6 {{selectedPlan === 'v6' ? 'selected' : ''}}" data-plan="v6" bindtap="onSelectPlan">
-        <view class="plan-tag">V6</view>
-        <view class="plan-duration">365天</view>
-        <view class="plan-price">¥598 <text class="unit">元</text></view>
-      </view>
-      <view class="plan-card plan-v8 {{selectedPlan === 'v8' ? 'selected' : ''}}" data-plan="v8" bindtap="onSelectPlan">
-        <view class="plan-tag">V8</view>
-        <view class="plan-duration">365天</view>
-        <view class="plan-price">¥21980 <text class="unit">元</text></view>
+      <view class="plan-card plan-{{item.id}} {{selectedPlan === item.id ? 'selected' : ''}}" wx:for="{{plans}}" wx:key="id" data-plan="{{item.id}}" bindtap="onSelectPlan">
+        <view class="plan-tag">{{item.name}}</view>
+        <view class="plan-duration">{{item.days}}天</view>
+        <view class="plan-price">¥{{item.price}} <text class="unit">元</text></view>
       </view>
     </view>
   </view>

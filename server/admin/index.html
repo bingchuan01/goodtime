@@ -158,6 +158,27 @@
           <textarea id="cfg_benefits_doc" rows="8"></textarea>
           <button type="button" id="saveBenefitsDoc" class="small">保存</button>
         </div>
+        <div class="card">
+          <h3>会员定价</h3>
+          <p style="font-size: 12px; color: #666; margin-bottom: 12px;">调整后小程序支付页将显示新价格，创建订单时按此处金额计费。</p>
+          <div class="config-row">
+            <label>V6 价格（元）</label>
+            <input type="number" id="cfg_v6_price" min="0" step="1" placeholder="598" style="width: 120px;" />
+          </div>
+          <div class="config-row">
+            <label>V6 有效天数</label>
+            <input type="number" id="cfg_v6_days" min="1" step="1" placeholder="365" style="width: 120px;" />
+          </div>
+          <div class="config-row">
+            <label>V8 价格（元）</label>
+            <input type="number" id="cfg_v8_price" min="0" step="1" placeholder="21980" style="width: 120px;" />
+          </div>
+          <div class="config-row">
+            <label>V8 有效天数</label>
+            <input type="number" id="cfg_v8_days" min="1" step="1" placeholder="365" style="width: 120px;" />
+          </div>
+          <button type="button" id="saveMemberPlans" class="small">保存会员定价</button>
+        </div>
       </div>
 
       <div id="tab-carousel" class="tab-pane hidden">
@@ -657,10 +678,11 @@
 
     async function loadConfig() {
       try {
-        const [dash, notice, benefits] = await Promise.all([
+        const [dash, notice, benefits, memberPlans] = await Promise.all([
           fetch(API + '/admin/config/dashboard', { headers: authHeader() }).then(r => r.json()),
           fetch(API + '/admin/config/purchase_notice', { headers: authHeader() }).then(r => r.json()),
-          fetch(API + '/admin/config/benefits_doc', { headers: authHeader() }).then(r => r.json())
+          fetch(API + '/admin/config/benefits_doc', { headers: authHeader() }).then(r => r.json()),
+          fetch(API + '/admin/config/member_plans', { headers: authHeader() }).then(r => r.json())
         ]);
         if (dash.code === 0 && dash.data) {
           const d = dash.data;
@@ -672,6 +694,18 @@
         }
         if (notice.code === 0 && notice.data != null) document.getElementById('cfg_purchase_notice').value = notice.data || '';
         if (benefits.code === 0 && benefits.data != null) document.getElementById('cfg_benefits_doc').value = benefits.data || '';
+        if (memberPlans.code === 0 && memberPlans.data && Array.isArray(memberPlans.data)) {
+          const v6 = memberPlans.data.find(p => p.id === 'v6');
+          const v8 = memberPlans.data.find(p => p.id === 'v8');
+          if (v6) {
+            document.getElementById('cfg_v6_price').value = v6.price ?? '';
+            document.getElementById('cfg_v6_days').value = v6.days ?? '';
+          }
+          if (v8) {
+            document.getElementById('cfg_v8_price').value = v8.price ?? '';
+            document.getElementById('cfg_v8_days').value = v8.days ?? '';
+          }
+        }
       } catch (e) {}
     }
 
@@ -698,6 +732,19 @@
       const res = await fetch(API + '/admin/config/benefits_doc', { method: 'PUT', headers: authHeader(), body: JSON.stringify(value) });
       const data = await res.json();
       alert(data.code === 0 ? '已保存' : (data.message || '失败'));
+    };
+    document.getElementById('saveMemberPlans').onclick = async () => {
+      const v6Price = parseInt(document.getElementById('cfg_v6_price').value, 10);
+      const v6Days = parseInt(document.getElementById('cfg_v6_days').value, 10);
+      const v8Price = parseInt(document.getElementById('cfg_v8_price').value, 10);
+      const v8Days = parseInt(document.getElementById('cfg_v8_days').value, 10);
+      const plans = [
+        { id: 'v6', name: 'V6', price: isNaN(v6Price) ? 598 : Math.max(0, v6Price), days: isNaN(v6Days) ? 365 : Math.max(1, v6Days) },
+        { id: 'v8', name: 'V8', price: isNaN(v8Price) ? 21980 : Math.max(0, v8Price), days: isNaN(v8Days) ? 365 : Math.max(1, v8Days) }
+      ];
+      const res = await fetch(API + '/admin/config/member_plans', { method: 'PUT', headers: authHeader(), body: JSON.stringify(plans) });
+      const data = await res.json();
+      alert(data.code === 0 ? '会员定价已保存' : (data.message || '失败'));
     };
 
     async function loadCarousel() {

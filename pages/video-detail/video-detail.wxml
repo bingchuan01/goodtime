@@ -44,8 +44,8 @@
         </view>
       </view>
 
-      <!-- V8会员选择视频时 -->
-      <view wx:if="{{project && project.displayType === 'video'}}" class="video-wrapper">
+      <!-- V8会员选择视频时（弹窗打开时不渲染，避免原生组件遮挡表单输入框） -->
+      <view wx:if="{{project && project.displayType === 'video' && !showForm}}" class="video-wrapper">
         <video
           id="projectVideo"
           class="project-video"
@@ -163,7 +163,7 @@
 
   <!-- 免费获取品牌资料表单弹窗 -->
   <view wx:if="{{showForm}}" class="form-modal" bindtap="onCloseForm">
-    <view class="form-content" catchtap="">
+    <view class="form-content" catchtap="onPreventClose">
       <view class="form-header">
         <text class="form-title">我想详细了解该项目</text>
         <view class="form-close" bindtap="onCloseForm">×</view>
