@@ -11,7 +11,10 @@ const ICON_MAP = {
   beauty: '/images/icons/beauty.svg',
   food: '/images/icons/food.svg',
   retail: '/images/icons/shop.svg',
-  service: '/images/icons/handshake.svg'
+  service: '/images/icons/service.svg',
+  beverage: '/images/icons/beverage.svg',
+  medical: '/images/icons/beauty.svg',
+  entertainment: '/images/icons/entertainment.svg'
 };
 
 // 默认分类（接口不可用时的回退）
@@ -24,10 +27,10 @@ const DEFAULT_CATEGORIES = [
   { id: 'beauty', name: '医美护肤', icon: '/images/icons/beauty.svg' },
   { id: 'food', name: '餐饮美食', icon: '/images/icons/food.svg' },
   { id: 'retail', name: '零售连锁', icon: '/images/icons/shop.svg' },
-  { id: 'service', name: '生活服务', icon: '/images/icons/handshake.svg' },
-  { id: 'beverage', name: '食品酒水', icon: '/images/icons/food.svg' },
+  { id: 'service', name: '生活服务', icon: '/images/icons/service.svg' },
+  { id: 'beverage', name: '食品酒水', icon: '/images/icons/beverage.svg' },
   { id: 'medical', name: '医美护肤', icon: '/images/icons/beauty.svg' },
-  { id: 'entertainment', name: '休闲娱乐', icon: '/images/icons/fire.svg' }
+  { id: 'entertainment', name: '休闲娱乐', icon: '/images/icons/entertainment.svg' }
 ];
 
 /**
@@ -39,6 +42,10 @@ function normalizeCategory(item) {
   let icon = item.icon || '';
   if (!icon || icon.indexOf('/') === -1) {
     icon = ICON_MAP[item.id] || ICON_MAP[item.icon] || '/images/icons/fire.svg';
+  }
+  // 后台无图标编辑时：按 id 强制用前端配置图标，与后台旧数据区分
+  if (ICON_MAP[item.id]) {
+    icon = ICON_MAP[item.id];
   }
   return {
     id: String(item.id),

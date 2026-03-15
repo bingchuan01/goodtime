@@ -57,6 +57,33 @@ Page({
     });
   },
 
+  checkUpdate() {
+    const updateManager = wx.getUpdateManager();
+    updateManager.onCheckForUpdate((res) => {
+      if (res.hasUpdate) {
+        wx.showLoading({ title: '检查到新版本...' });
+      } else {
+        wx.showToast({ title: '当前已是最新版本', icon: 'none' });
+      }
+    });
+    updateManager.onUpdateReady(() => {
+      wx.hideLoading();
+      wx.showModal({
+        title: '更新提示',
+        content: '新版本已就绪，是否重启应用？',
+        success: (res) => {
+          if (res.confirm) {
+            updateManager.applyUpdate();
+          }
+        }
+      });
+    });
+    updateManager.onUpdateFailed(() => {
+      wx.hideLoading();
+      wx.showToast({ title: '更新失败，请稍后重试', icon: 'none' });
+    });
+  },
+
   aboutUs() {
     wx.navigateTo({
       url: '/pages/user/doc/doc?type=about'

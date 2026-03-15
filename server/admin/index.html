@@ -67,6 +67,7 @@
         <a href="#" data-tab="users">用户管理</a>
         <a href="#" data-tab="categories">分类管理</a>
         <a href="#" data-tab="config">配置</a>
+        <a href="#" data-tab="compliance">合规文档</a>
         <a href="#" data-tab="carousel">成为他们</a>
         <a href="#" data-tab="leads">线索</a>
         <a href="#" data-tab="messages">咨询合作</a>
@@ -178,6 +179,33 @@
             <input type="number" id="cfg_v8_days" min="1" step="1" placeholder="365" style="width: 120px;" />
           </div>
           <button type="button" id="saveMemberPlans" class="small">保存会员定价</button>
+        </div>
+      </div>
+
+      <div id="tab-compliance" class="tab-pane hidden">
+        <div class="card">
+          <h3>合规文档</h3>
+          <p style="font-size: 12px; color: #666; margin-bottom: 16px;">小程序设置页对外展示的合规与法律说明（关于我们、隐私协议、用户协议、第三方信息共享清单），由后台维护。支持 HTML 格式。</p>
+          <div class="config-row">
+            <label>关于我们</label>
+            <textarea id="cfg_about_doc" rows="8"></textarea>
+            <button type="button" id="saveAboutDoc" class="small">保存</button>
+          </div>
+          <div class="config-row">
+            <label>隐私协议</label>
+            <textarea id="cfg_privacy_doc" rows="10"></textarea>
+            <button type="button" id="savePrivacyDoc" class="small">保存</button>
+          </div>
+          <div class="config-row">
+            <label>用户协议</label>
+            <textarea id="cfg_user_agreement_doc" rows="10"></textarea>
+            <button type="button" id="saveUserAgreementDoc" class="small">保存</button>
+          </div>
+          <div class="config-row">
+            <label>第三方信息共享清单</label>
+            <textarea id="cfg_third_party_doc" rows="10"></textarea>
+            <button type="button" id="saveThirdPartyDoc" class="small">保存</button>
+          </div>
         </div>
       </div>
 
@@ -355,6 +383,7 @@
         if (tab === 'users') loadUsers();
         if (tab === 'categories') loadCategories();
         if (tab === 'config') loadConfig();
+        if (tab === 'compliance') loadComplianceDocs();
         if (tab === 'carousel') loadCarousel();
         if (tab === 'leads') loadLeads();
         if (tab === 'messages') loadMessages();
@@ -676,6 +705,21 @@
     document.getElementById('projectStatus').onchange = loadProjects;
     document.getElementById('refreshProjects').onclick = loadProjects;
 
+    async function loadComplianceDocs() {
+      try {
+        const [aboutDoc, privacyDoc, userAgreementDoc, thirdPartyDoc] = await Promise.all([
+          fetch(API + '/admin/config/about_doc', { headers: authHeader() }).then(r => r.json()),
+          fetch(API + '/admin/config/privacy_doc', { headers: authHeader() }).then(r => r.json()),
+          fetch(API + '/admin/config/user_agreement_doc', { headers: authHeader() }).then(r => r.json()),
+          fetch(API + '/admin/config/third_party_doc', { headers: authHeader() }).then(r => r.json())
+        ]);
+        if (aboutDoc.code === 0 && aboutDoc.data != null) document.getElementById('cfg_about_doc').value = aboutDoc.data || '';
+        if (privacyDoc.code === 0 && privacyDoc.data != null) document.getElementById('cfg_privacy_doc').value = privacyDoc.data || '';
+        if (userAgreementDoc.code === 0 && userAgreementDoc.data != null) document.getElementById('cfg_user_agreement_doc').value = userAgreementDoc.data || '';
+        if (thirdPartyDoc.code === 0 && thirdPartyDoc.data != null) document.getElementById('cfg_third_party_doc').value = thirdPartyDoc.data || '';
+      } catch (e) {}
+    }
+
     async function loadConfig() {
       try {
         const [dash, notice, benefits, memberPlans] = await Promise.all([
@@ -730,6 +774,30 @@
     document.getElementById('saveBenefitsDoc').onclick = async () => {
       const value = document.getElementById('cfg_benefits_doc').value;
       const res = await fetch(API + '/admin/config/benefits_doc', { method: 'PUT', headers: authHeader(), body: JSON.stringify(value) });
+      const data = await res.json();
+      alert(data.code === 0 ? '已保存' : (data.message || '失败'));
+    };
+    document.getElementById('saveAboutDoc').onclick = async () => {
+      const value = document.getElementById('cfg_about_doc').value;
+      const res = await fetch(API + '/admin/config/about_doc', { method: 'PUT', headers: authHeader(), body: JSON.stringify(value) });
+      const data = await res.json();
+      alert(data.code === 0 ? '已保存' : (data.message || '失败'));
+    };
+    document.getElementById('savePrivacyDoc').onclick = async () => {
+      const value = document.getElementById('cfg_privacy_doc').value;
+      const res = await fetch(API + '/admin/config/privacy_doc', { method: 'PUT', headers: authHeader(), body: JSON.stringify(value) });
+      const data = await res.json();
+      alert(data.code === 0 ? '已保存' : (data.message || '失败'));
+    };
+    document.getElementById('saveUserAgreementDoc').onclick = async () => {
+      const value = document.getElementById('cfg_user_agreement_doc').value;
+      const res = await fetch(API + '/admin/config/user_agreement_doc', { method: 'PUT', headers: authHeader(), body: JSON.stringify(value) });
+      const data = await res.json();
+      alert(data.code === 0 ? '已保存' : (data.message || '失败'));
+    };
+    document.getElementById('saveThirdPartyDoc').onclick = async () => {
+      const value = document.getElementById('cfg_third_party_doc').value;
+      const res = await fetch(API + '/admin/config/third_party_doc', { method: 'PUT', headers: authHeader(), body: JSON.stringify(value) });
       const data = await res.json();
       alert(data.code === 0 ? '已保存' : (data.message || '失败'));
     };

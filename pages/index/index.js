@@ -1,6 +1,7 @@
 // index.js
 const api = require('../../utils/api');
 const categoriesUtil = require('../../utils/categories');
+const dashboardIconSvg = require('../../utils/dashboardIconSvg');
 
 Page({
   data: {
@@ -30,6 +31,8 @@ Page({
   },
   
   onLoad(options) {
+    wx.setNavigationBarColor({ frontColor: '#ffffff', backgroundColor: '#1a1a24' });
+    this.setData({ dashboardData: dashboardIconSvg.applyInlineIcons(this.data.dashboardData) });
     this.loadCategories();
     this.loadDashboard();
     this.loadProjects();
@@ -46,13 +49,13 @@ Page({
         const labels = { marketSize: '市场规模', serviceMerchants: '服务商家', strategicPartners: '战略合作', marketShare: '市场份额', registeredUsers: '注册用户' };
         const icons = { marketSize: '/images/icons/chart.svg', serviceMerchants: '/images/icons/shop.svg', strategicPartners: '/images/icons/handshake.svg', marketShare: '/images/icons/pie-chart.svg', registeredUsers: '/images/icons/users.svg' };
         const colors = { marketSize: '#E3F2FD', serviceMerchants: '#FFF9C4', strategicPartners: '#F5F5F5', marketShare: '#FCE4EC', registeredUsers: '#FFF9C4' };
-        const dashboardData = Object.keys(labels).map(key => ({
+        const dashboardData = dashboardIconSvg.applyInlineIcons(Object.keys(labels).map(key => ({
           key,
           label: labels[key],
           value: data[key] ?? '',
           icon: icons[key],
           iconBgColor: colors[key]
-        }));
+        })));
         this.setData({ dashboardData });
       }
     } catch (e) {}

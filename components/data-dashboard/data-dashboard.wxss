@@ -16,6 +16,12 @@
   flex: 1;
 }
 
+/* 仅「战略合作」图标：明暗/透明度/轻微模糊的呼吸（真机可跑） */
+@keyframes icon-breathe-dim {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  50% { opacity: 0.78; filter: brightness(0.88); }
+}
+
 .icon-wrapper {
   width: 80rpx;
   height: 80rpx;
@@ -26,9 +32,13 @@
   margin-bottom: 16rpx;
 }
 
+.icon-wrapper_breathe {
+  animation: icon-breathe-dim 2.8s ease-in-out infinite;
+}
+
 .icon {
-  width: 48rpx;
-  height: 48rpx;
+  width: 80rpx;
+  height: 80rpx;
 }
 
 .icon-fallback {

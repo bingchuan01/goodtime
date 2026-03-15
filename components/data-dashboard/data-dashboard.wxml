@@ -1,8 +1,8 @@
 <!--data-dashboard.wxml-->
 <view class="data-dashboard">
   <view class="dashboard-item" wx:for="{{dataList}}" wx:key="key" wx:for-index="idx" wx:for-item="item">
-    <view class="icon-wrapper" style="background-color: {{item.iconBgColor}}">
-      <image class="icon" src="{{item.icon}}" mode="aspectFit" binderror="onIconError" data-index="{{idx}}"></image>
+    <view class="icon-wrapper {{item.key === 'strategicPartners' ? 'icon-wrapper_breathe' : ''}}" style="background-color: {{item.iconBgColor}}">
+      <image class="icon" src="{{item.iconDataUri || item.icon}}" mode="aspectFit" binderror="onIconError" data-index="{{idx}}"></image>
       <text class="icon-fallback" wx:if="{{item.iconError}}">📊</text>
     </view>
     <view class="label">{{item.label}}</view>

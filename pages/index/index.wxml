@@ -2,7 +2,7 @@
 <view class="page-content">
   <!-- 固定区域：导航栏 + LOGO（在红线上一行，不被摄像头遮挡）+ 分隔线 -->
   <view class="fixed-header">
-    <navigation-bar title="" back="{{false}}" color="black" background="transparent"></navigation-bar>
+    <navigation-bar title="" back="{{false}}" color="#f5f5f5" background="transparent"></navigation-bar>
     <header-logo logo-url="/images/hsjlogo.png"></header-logo>
   </view>
   <scroll-view class="scrollarea" scroll-y="true" refresher-enabled="{{true}}" refresher-triggered="{{refreshing}}" bindrefresherrefresh="onRefresh" bindscrolltolower="onLoadMore">
