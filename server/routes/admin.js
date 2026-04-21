@@ -56,17 +56,46 @@ router.get('/projects', adminAuth, (req, res) => {
     } catch (e) {}
 
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize, 10) || 10));
+    const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize, 10) || 50));
     const status = (req.query.status || '').trim();
+    const title = (req.query.title || '').trim();
+    const publisher = (req.query.publisher || '').trim();
+    const publishedStart = (req.query.publishedStart || '').trim();
+    const publishedEnd = (req.query.publishedEnd || '').trim();
     const offset = (page - 1) * pageSize;
 
-    let sql = 'SELECT * FROM projects WHERE 1=1';
+    let sql = `SELECT p.* FROM projects p
+      LEFT JOIN users u ON u.id = p.user_id
+      WHERE 1=1`;
     const params = [];
     if (status) {
-      sql += ' AND status = ?';
+      sql += ' AND p.status = ?';
       params.push(status);
     }
-    sql += ' ORDER BY updated_at DESC LIMIT ? OFFSET ?';
+    if (title) {
+      sql += ' AND p.title LIKE ?';
+      params.push(`%${title}%`);
+    }
+    if (publisher) {
+      sql += ' AND (u.nickname LIKE ? OR CAST(u.id AS TEXT) LIKE ?)';
+      params.push(`%${publisher}%`, `%${publisher}%`);
+    }
+    if (publishedStart) {
+      sql += ' AND p.published_at >= ?';
+      params.push(`${publishedStart} 00:00:00`);
+    }
+    if (publishedEnd) {
+      sql += ' AND p.published_at <= ?';
+      params.push(`${publishedEnd} 23:59:59`);
+    }
+
+    const countSql = `SELECT COUNT(1) AS total FROM projects p
+      LEFT JOIN users u ON u.id = p.user_id
+      WHERE 1=1${sql.split('WHERE 1=1')[1]}`;
+    const totalRow = db.prepare(countSql).get(...params);
+    const total = totalRow ? Number(totalRow.total || 0) : 0;
+
+    sql += ' ORDER BY p.updated_at DESC LIMIT ? OFFSET ?';
     params.push(pageSize + 1, offset);
 
     const rows = db.prepare(sql).all(...params);
@@ -102,7 +131,7 @@ router.get('/projects', adminAuth, (req, res) => {
       };
     });
 
-    res.json({ code: 0, data: { list, hasMore }, message: 'ok' });
+    res.json({ code: 0, data: { list, hasMore, total, page, pageSize }, message: 'ok' });
   } catch (e) {
     console.error(e);
     res.status(500).json({ code: 500, message: '获取列表失败' });

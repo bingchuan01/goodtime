@@ -84,9 +84,33 @@
             <option value="approved">已通过</option>
             <option value="rejected">已退回</option>
           </select>
+          <label style="margin-left: 10px;">每页 </label>
+          <select id="projectPageSize">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+          </select>
+          <input type="text" id="projectTitleKeyword" placeholder="标题关键词" style="margin-left: 10px; width: 180px;" />
+          <input type="text" id="projectPublisherKeyword" placeholder="发布人(昵称/ID)" style="width: 180px;" />
+          <label style="margin-left: 10px;">发布时间</label>
+          <input type="date" id="projectPublishedStart" />
+          <span>至</span>
+          <input type="date" id="projectPublishedEnd" />
           <button type="button" id="refreshProjects" class="small">刷新</button>
+          <button type="button" id="searchProjects" class="small">搜索</button>
+          <button type="button" id="exportProjects" class="small">导出CSV</button>
+          <button type="button" id="printProjects" class="small secondary">打印</button>
         </div>
         <div class="card">
+          <div style="margin-bottom: 10px; font-size: 12px; color: #666;">
+            <span id="projectPageInfo">共 0 条</span>
+            <button type="button" id="projectPrevPage" class="small secondary" style="margin-left: 12px;">上一页</button>
+            <button type="button" id="projectNextPage" class="small" style="margin-left: 6px;">下一页</button>
+            <span style="margin-left: 10px;">跳转到</span>
+            <input type="number" id="projectGotoPage" min="1" style="width: 80px;" />
+            <button type="button" id="projectGotoPageBtn" class="small">GO</button>
+          </div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -335,6 +359,9 @@
 
   <script>
     const API = window.location.origin + '/api';
+    let projectPage = 1;
+    let projectTotal = 0;
+    let projectCurrentList = [];
     function token() { return localStorage.getItem('adminToken') || ''; }
     function authHeader() { return { 'Authorization': 'Bearer ' + token(), 'Content-Type': 'application/json' }; }
 
@@ -391,9 +418,23 @@
       };
     });
 
-    async function loadProjects() {
+    async function loadProjects(page) {
+      projectPage = Math.max(1, parseInt(page, 10) || projectPage || 1);
       const status = document.getElementById('projectStatus').value;
-      const url = API + '/admin/projects' + (status ? '?status=' + status : '');
+      const pageSize = parseInt(document.getElementById('projectPageSize').value, 10) || 50;
+      const title = document.getElementById('projectTitleKeyword').value.trim();
+      const publisher = document.getElementById('projectPublisherKeyword').value.trim();
+      const publishedStart = document.getElementById('projectPublishedStart').value;
+      const publishedEnd = document.getElementById('projectPublishedEnd').value;
+      const search = new URLSearchParams();
+      if (status) search.set('status', status);
+      if (title) search.set('title', title);
+      if (publisher) search.set('publisher', publisher);
+      if (publishedStart) search.set('publishedStart', publishedStart);
+      if (publishedEnd) search.set('publishedEnd', publishedEnd);
+      search.set('page', String(projectPage));
+      search.set('pageSize', String(pageSize));
+      const url = API + '/admin/projects?' + search.toString();
       const res = await fetch(url, { headers: authHeader() });
       const data = await res.json();
       const tbody = document.getElementById('projectList');
@@ -401,6 +442,9 @@
         tbody.innerHTML = '<tr><td colspan="9">加载失败</td></tr>';
         return;
       }
+      projectCurrentList = data.data.list || [];
+      projectTotal = Number(data.data.total || 0);
+      projectPage = Number(data.data.page || projectPage || 1);
       const fmtTime = (t) => t ? String(t).replace('T', ' ').trim().slice(0, 19) : '-';
       const addOneYear = (dateStr) => {
         if (!dateStr) return null;
@@ -417,7 +461,7 @@
         d.setHours(0, 0, 0, 0);
         return d < today;
       };
-      tbody.innerHTML = data.data.list.map(p => {
+      tbody.innerHTML = projectCurrentList.map(p => {
         const expireVal = (p.expire_at != null && String(p.expire_at).trim() !== '') ? p.expire_at : (p.published_at ? addOneYear(p.published_at) : null);
         const expAt = expireVal ? fmtTime(expireVal) : '-';
         const expired = isExpired(expireVal);
@@ -443,6 +487,10 @@
         </tr>
       `;
       }).join('');
+      const totalPages = Math.max(1, Math.ceil(projectTotal / pageSize));
+      document.getElementById('projectPageInfo').textContent = `共 ${projectTotal} 条，当前第 ${projectPage}/${totalPages} 页`;
+      document.getElementById('projectPrevPage').disabled = projectPage <= 1;
+      document.getElementById('projectNextPage').disabled = !data.data.hasMore;
       tbody.querySelectorAll('button[data-action]').forEach(btn => {
         btn.onclick = () => auditProject(btn.getAttribute('data-id'), btn.getAttribute('data-action'));
       });
@@ -702,8 +750,46 @@
       }
     };
 
-    document.getElementById('projectStatus').onchange = loadProjects;
-    document.getElementById('refreshProjects').onclick = loadProjects;
+    function resetProjectPageAndSearch() {
+      projectPage = 1;
+      loadProjects(1);
+    }
+    document.getElementById('projectStatus').onchange = resetProjectPageAndSearch;
+    document.getElementById('projectPageSize').onchange = resetProjectPageAndSearch;
+    document.getElementById('refreshProjects').onclick = () => loadProjects(projectPage);
+    document.getElementById('searchProjects').onclick = resetProjectPageAndSearch;
+    document.getElementById('projectPrevPage').onclick = () => { if (projectPage > 1) loadProjects(projectPage - 1); };
+    document.getElementById('projectNextPage').onclick = () => loadProjects(projectPage + 1);
+    document.getElementById('projectGotoPageBtn').onclick = () => {
+      const target = parseInt(document.getElementById('projectGotoPage').value, 10);
+      if (!target || target < 1) return;
+      loadProjects(target);
+    };
+    document.getElementById('exportProjects').onclick = () => {
+      const rows = projectCurrentList || [];
+      if (!rows.length) {
+        alert('当前无可导出数据');
+        return;
+      }
+      const cols = ['ID', '标题', '发布者', '发布类型', '状态', '发布时间', '到期时间', '展区'];
+      const escapeCsv = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+      const lines = [cols.join(',')];
+      rows.forEach(p => {
+        lines.push([
+          p.id, p.title || '', p.publisher || '', p.publish_type || '', p.status || '',
+          p.published_at || p.created_at || '', p.expire_at || '', p.display_zone || ''
+        ].map(escapeCsv).join(','));
+      });
+      const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `projects_page_${projectPage}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    };
+    document.getElementById('printProjects').onclick = () => window.print();
 
     async function loadComplianceDocs() {
       try {
