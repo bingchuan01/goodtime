@@ -49,11 +49,20 @@
 .label {
   font-size: 24rpx;
   color: #666;
-  margin-bottom: 8rpx;
+  margin-right: 8rpx;
+  line-height: 1.2;
 }
 
 .value {
   font-size: 28rpx;
   font-weight: bold;
   color: #FF6B35;
+  line-height: 1.2;
+}
+
+.info-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  white-space: nowrap;
 }

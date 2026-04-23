@@ -14,7 +14,16 @@ const ICON_MAP = {
   service: '/images/icons/service.svg',
   beverage: '/images/icons/beverage.svg',
   medical: '/images/icons/beauty.svg',
-  entertainment: '/images/icons/entertainment.svg'
+  entertainment: '/images/icons/entertainment.svg',
+  health: '/images/icons/service.svg',
+  hotel: '/images/icons/service.svg',
+  motherBaby: '/images/icons/service.svg',
+  auto: '/images/icons/shop.svg',
+  fashion: '/images/icons/shop.svg',
+  buildingDecor: '/images/icons/service.svg',
+  homeFurniture: '/images/icons/service.svg',
+  homeTextile: '/images/icons/service.svg',
+  game: '/images/icons/entertainment.svg'
 };
 
 // 默认分类（接口不可用时的回退）
@@ -30,7 +39,16 @@ const DEFAULT_CATEGORIES = [
   { id: 'service', name: '生活服务', icon: '/images/icons/service.svg' },
   { id: 'beverage', name: '食品酒水', icon: '/images/icons/beverage.svg' },
   { id: 'medical', name: '医美护肤', icon: '/images/icons/beauty.svg' },
-  { id: 'entertainment', name: '休闲娱乐', icon: '/images/icons/entertainment.svg' }
+  { id: 'entertainment', name: '休闲娱乐', icon: '/images/icons/entertainment.svg' },
+  { id: 'health', name: '保健养身', icon: '/images/icons/service.svg' },
+  { id: 'hotel', name: '酒店服务', icon: '/images/icons/service.svg' },
+  { id: 'motherBaby', name: '母婴儿童', icon: '/images/icons/service.svg' },
+  { id: 'auto', name: '汽车项目', icon: '/images/icons/shop.svg' },
+  { id: 'fashion', name: '服饰箱包', icon: '/images/icons/shop.svg' },
+  { id: 'buildingDecor', name: '建材装饰', icon: '/images/icons/service.svg' },
+  { id: 'homeFurniture', name: '家居家具', icon: '/images/icons/service.svg' },
+  { id: 'homeTextile', name: '品牌家纺', icon: '/images/icons/service.svg' },
+  { id: 'game', name: '娱乐游戏', icon: '/images/icons/entertainment.svg' }
 ];
 
 /**

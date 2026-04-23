@@ -318,24 +318,30 @@ async function init() {
     save();
   }
 
-  const catCount = countByExec('SELECT COUNT(*) as c FROM categories');
-  if (catCount && catCount.c === 0) {
-    const defaults = [
-      ['hot', '热门', '/images/icons/fire.svg', 1],
-      ['trend', '趋势', '/images/icons/trend.svg', 2],
-      ['new', '上新', '/images/icons/new.svg', 3],
-      ['food', '餐饮美食', '/images/icons/food.svg', 10],
-      ['education', '教育培训', '/images/icons/education.svg', 11],
-      ['beauty', '医美护肤', '/images/icons/beauty.svg', 12],
-      ['retail', '零售连锁', '/images/icons/shop.svg', 13],
-      ['service', '生活服务', '/images/icons/service.svg', 14]
-    ];
-    defaults.forEach(([id, name, icon, sort]) => {
-      const esc = (s) => (s || '').replace(/'/g, "''");
-      innerDb.run(`INSERT OR IGNORE INTO categories (id, name, icon, sort, enabled) VALUES ('${esc(id)}', '${esc(name)}', '${esc(icon)}', ${Number(sort) || 0}, 1)`);
-    });
-    save();
-  }
+  const defaults = [
+    ['hot', '热门', '/images/icons/fire.svg', 1],
+    ['trend', '趋势', '/images/icons/trend.svg', 2],
+    ['new', '上新', '/images/icons/new.svg', 3],
+    ['food', '餐饮美食', '/images/icons/food.svg', 10],
+    ['education', '教育培训', '/images/icons/education.svg', 11],
+    ['beauty', '医美护肤', '/images/icons/beauty.svg', 12],
+    ['retail', '零售连锁', '/images/icons/shop.svg', 13],
+    ['service', '生活服务', '/images/icons/service.svg', 14],
+    ['health', '保健养身', '/images/icons/service.svg', 15],
+    ['hotel', '酒店服务', '/images/icons/service.svg', 16],
+    ['motherBaby', '母婴儿童', '/images/icons/service.svg', 17],
+    ['auto', '汽车项目', '/images/icons/shop.svg', 18],
+    ['fashion', '服饰箱包', '/images/icons/shop.svg', 19],
+    ['buildingDecor', '建材装饰', '/images/icons/service.svg', 20],
+    ['homeFurniture', '家居家具', '/images/icons/service.svg', 21],
+    ['homeTextile', '品牌家纺', '/images/icons/service.svg', 22],
+    ['game', '娱乐游戏', '/images/icons/entertainment.svg', 23]
+  ];
+  defaults.forEach(([id, name, icon, sort]) => {
+    const esc = (s) => (s || '').replace(/'/g, "''");
+    innerDb.run(`INSERT OR IGNORE INTO categories (id, name, icon, sort, enabled) VALUES ('${esc(id)}', '${esc(name)}', '${esc(icon)}', ${Number(sort) || 0}, 1)`);
+  });
+  save();
 
   const configCount = countByExec('SELECT COUNT(*) as c FROM config');
   if (configCount && configCount.c === 0) {
