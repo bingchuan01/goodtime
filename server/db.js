@@ -327,15 +327,15 @@ async function init() {
     ['beauty', '医美护肤', '/images/icons/beauty.svg', 12],
     ['retail', '零售连锁', '/images/icons/shop.svg', 13],
     ['service', '生活服务', '/images/icons/service.svg', 14],
-    ['health', '保健养身', '/images/icons/service.svg', 15],
-    ['hotel', '酒店服务', '/images/icons/service.svg', 16],
-    ['motherBaby', '母婴儿童', '/images/icons/service.svg', 17],
-    ['auto', '汽车项目', '/images/icons/shop.svg', 18],
-    ['fashion', '服饰箱包', '/images/icons/shop.svg', 19],
-    ['buildingDecor', '建材装饰', '/images/icons/service.svg', 20],
-    ['homeFurniture', '家居家具', '/images/icons/service.svg', 21],
-    ['homeTextile', '品牌家纺', '/images/icons/service.svg', 22],
-    ['game', '娱乐游戏', '/images/icons/entertainment.svg', 23]
+    ['health', '保健养身', '/images/icons/health.svg', 15],
+    ['hotel', '酒店服务', '/images/icons/hotel.svg', 16],
+    ['motherBaby', '母婴儿童', '/images/icons/mother-baby.svg', 17],
+    ['auto', '汽车项目', '/images/icons/auto.svg', 18],
+    ['fashion', '服饰箱包', '/images/icons/fashion.svg', 19],
+    ['buildingDecor', '建材装饰', '/images/icons/building-decor.svg', 20],
+    ['homeFurniture', '家居家具', '/images/icons/home-furniture.svg', 21],
+    ['homeTextile', '品牌家纺', '/images/icons/home-textile.svg', 22],
+    ['game', '娱乐游戏', '/images/icons/game.svg', 23]
   ];
   defaults.forEach(([id, name, icon, sort]) => {
     const esc = (s) => (s || '').replace(/'/g, "''");
