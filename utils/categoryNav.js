@@ -1,0 +1,103 @@
+/** 二级分类导航（与 server/lib/category-nav-data.js 对齐） */
+const GROUPS = [
+  {
+    id: 'hot',
+    name: '热门赛道',
+    type: 'zone',
+    zoneId: 'hot',
+    children: [
+      { id: 'food', name: '餐饮美食' },
+      { id: 'education', name: '教育培训' },
+      { id: 'beauty', name: '医美护肤' },
+      { id: 'retail', name: '零售连锁' },
+      { id: 'service', name: '生活服务' },
+      { id: 'childcare', name: '托管中心', tags: ['全日托管', '课后托管', '托育中心'] }
+    ]
+  },
+  {
+    id: 'trend',
+    name: '趋势前沿',
+    type: 'zone',
+    zoneId: 'trend',
+    children: [
+      { id: 'trend_ai', name: 'AI人工智能', tags: ['AI应用', 'AI工具', '智能客服'] },
+      { id: 'trend_compute', name: 'AI算力租赁', tags: ['算力中心', 'GPU租赁'] },
+      { id: 'trend_overseas', name: '海外市场', tags: ['跨境品牌', '出海服务'] },
+      { id: 'trend_physics_ai', name: '物理AI', tags: ['机器人', '智能硬件'] },
+      { id: 'health', name: '健康产业', tags: ['健康管理', '康养服务'] },
+      { id: 'beauty', name: '颜值管理', tags: ['轻医美', '皮肤管理'] },
+      { id: 'trend_delivery', name: '自营外卖', tags: ['品牌外卖', '社区团购'] }
+    ]
+  },
+  {
+    id: 'new',
+    name: '品牌上新',
+    type: 'zone',
+    zoneId: 'new',
+    noL3: true,
+    children: []
+  },
+  {
+    id: 'industries',
+    name: '行业分类',
+    type: 'industry',
+    children: [
+      { id: 'food', name: '餐饮美食', tags: ['中式快餐', '火锅/串串', '茶饮/甜品', '小吃/快餐', '面食/米粉', '烧烤/夜宵', '预制菜/卤味', '咖啡/轻食', '烘焙', '儿童餐食'] },
+      { id: 'education', name: '教育培训', tags: ['K12辅导', '语言培训', '素质教育', '职业教育/技能认证', '早教/幼教', '留学中介', 'IT/考证培训', '语言启蒙', '艺术考级', '自习室/空间运营'] },
+      { id: 'beauty', name: '医美护肤', tags: ['轻医美诊所', '皮肤管理中心', '痤痘/抗衰专营店', '中医美容', '植发/毛发管理', '家用美容仪器代理', '医美耗材分销', '术后修复中心', '跨境护肤品代理', '美容仪器加盟'] },
+      { id: 'retail', name: '零售连锁', tags: ['便利店', '零食量贩店', '进口食品店', '母婴用品店', '宠物用品店', '药店/健康产品', '文创杂货', '智能硬件零售', '鲜花绿植', '折扣店'] },
+      { id: 'service', name: '生活服务', tags: ['洗衣店', '家政保洁', '上门维修', '美甲美睫', '理发/造型沙龙', '摄影写真', '婚庆策划', '宠物寄养/美容', '洗车/汽车美容', '上门按摩'] },
+      { id: 'health', name: '保健养生', tags: ['中医理疗馆', '艾灸/拔罐中心', '足疗/SPA', '健康检测站', '营养补剂零售', '睡眠调理', '慢性病管理', '康养驿站', '智能穿戴健康设备', '老年照护服务'] },
+      { id: 'hotel', name: '酒店服务', tags: ['经济型连锁酒店', '民宿/短租公寓', '主题客栈', '商务酒店', '酒店管理软件加盟', '自助入住终端', '酒店用品集采', '酒店清洁外包', '酒店代运营'] },
+      { id: 'motherBaby', name: '母婴儿童', tags: ['母婴店', '儿童摄影', '早教中心', '婴儿游泳馆', '玩具租赁', '产后修复中心', '儿童游乐场', '辅食/健康食品', '儿童服饰', '孕产护理'] },
+      { id: 'auto', name: '汽车项目', tags: ['汽车美容', '快修快保', '充电桩加盟', '二手车经纪', '汽车用品零售', '洗车加盟', '车载智能设备', '轮胎服务', '汽车租赁', '新能源车后服务'] },
+      { id: 'fashion', name: '服饰箱包', tags: ['快时尚女装/男装', '定制服饰', '运动户外品牌', '箱包皮具', '鞋履', '内衣家纺', '潮牌代理', '二手服饰', '跨境电商服饰', '婚庆礼服租赁'] },
+      { id: 'buildingDecor', name: '建材装饰', tags: ['瓷砖/石材代理', '定制橱柜/衣柜', '防水工程', '智能门窗', '吊顶/照明', '环保涂料', '地暖/中央空调代理', '集成墙面', '卫浴洁具', '工程总包服务'] },
+      { id: 'homeFurniture', name: '家居家具', tags: ['软体家具', '板式/实木家具', '定制整装', '户外家具', '智能家居系统', '家居饰品', '折叠/收纳家具', '网红设计款代理', '家居电商仓配', '家居软装搭配'] },
+      { id: 'homeTextile', name: '品牌家纺', tags: ['床品四件套', '毛巾浴巾', '窗帘布艺', '冬季保暖用品', '抗菌抑菌系列', '酒店专用家纺', '儿童家纺', '竹纤维/蚕丝产品', '家纺OEM贴牌', '线上+线下融合门店'] },
+      { id: 'game', name: '娱乐游戏', tags: ['桌游吧/剧本杀馆', '电竞馆', 'VR体验馆', '儿童益智游乐', '密室逃脱', '街机/抓娃娃机代理', '线上游戏代运营', '游戏周边零售', '棋牌室', '亲子互动体验中心'] }
+    ]
+  }
+];
+
+const PRICE_RANGES = [
+  { id: '1-5', label: '1～5万' },
+  { id: '6-10', label: '6～10万' },
+  { id: '11-20', label: '11～20万' },
+  { id: '21-50', label: '21～50万' },
+  { id: '50+', label: '50万以上' }
+];
+
+function buildLeftNav() {
+  const items = [];
+  GROUPS.forEach((group) => {
+    if (group.noL3 && group.zoneId) {
+      items.push({
+        key: group.id,
+        label: group.name,
+        directZone: group.zoneId,
+        groupName: group.name
+      });
+      return;
+    }
+    (group.children || []).forEach((child) => {
+      const industryTags = GROUPS.find((g) => g.id === 'industries')
+        ?.children?.find((c) => c.id === child.id)?.tags;
+      items.push({
+        key: `${group.id}_${child.id}`,
+        label: child.name,
+        categoryId: child.id,
+        zoneId: group.type === 'zone' ? group.zoneId : '',
+        groupName: group.name,
+        tags: child.tags && child.tags.length ? child.tags : (industryTags || [])
+      });
+    });
+  });
+  return items;
+}
+
+module.exports = {
+  GROUPS,
+  PRICE_RANGES,
+  buildLeftNav
+};

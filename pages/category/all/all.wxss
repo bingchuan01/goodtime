@@ -1,0 +1,107 @@
+.page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+  box-sizing: border-box;
+}
+
+.shortcut-bar {
+  padding: 16rpx 24rpx;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.shortcut-chip {
+  display: inline-block;
+  padding: 12rpx 24rpx;
+  background: #f0f0f0;
+  color: #666;
+  font-size: 26rpx;
+  border-radius: 8rpx;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.left-panel {
+  width: 220rpx;
+  background: #fff;
+  border-right: 1px solid #f0f0f0;
+}
+
+.left-item {
+  padding: 24rpx 16rpx;
+  border-left: 6rpx solid transparent;
+  color: #666;
+}
+
+.left-item.active {
+  background: #f5f5f5;
+  border-left-color: #666;
+  color: #333;
+  font-weight: 600;
+}
+
+.left-group {
+  display: block;
+  font-size: 20rpx;
+  color: #999;
+  margin-bottom: 4rpx;
+}
+
+.left-label {
+  font-size: 26rpx;
+}
+
+.right-panel {
+  flex: 1;
+  background: #f5f5f5;
+}
+
+.right-inner {
+  padding: 24rpx;
+}
+
+.right-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.right-title {
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 600;
+}
+
+.browse-all {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.tag-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.tag-chip {
+  padding: 16rpx 24rpx;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.empty-tags {
+  padding: 40rpx;
+  text-align: center;
+  color: #999;
+  font-size: 26rpx;
+}

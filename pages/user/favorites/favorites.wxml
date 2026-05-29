@@ -1,0 +1,13 @@
+<navigation-bar title="我的收藏" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<scroll-view class="page" scroll-y bindscrolltolower="onReachBottom">
+  <view class="fav-item" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onItemTap">
+    <image class="fav-cover" src="{{item.coverUrl || '/images/placeholder.svg'}}" mode="aspectFill" />
+    <view class="fav-info">
+      <text class="fav-title">{{item.title}}</text>
+      <text class="fav-meta">{{item.category}} · {{item.investmentAmount}}</text>
+    </view>
+  </view>
+  <view class="empty" wx:if="{{!loading && list.length === 0}}">暂无收藏</view>
+  <view class="loading" wx:if="{{loading}}">加载中...</view>
+</scroll-view>

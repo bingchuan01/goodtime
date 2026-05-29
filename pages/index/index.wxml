@@ -39,7 +39,35 @@
 
     <search-bar placeholder="种草品牌从此刻开始" bind:search="onSearch" bind:locationchange="onLocationChange"></search-bar>
 
-    <category-nav category-list="{{categoryList}}" current-category-id="{{currentCategoryId}}" bind:change="onCategoryChange"></category-nav>
+    <view class="home-category-wrap">
+      <category-nav
+        class="home-category-nav"
+        category-list="{{categoryList}}"
+        current-category-id="{{currentCategoryId}}"
+        bind:change="onCategoryChange"
+      ></category-nav>
+      <view class="home-all-entry" bindtap="onAllProjectsTap">
+        <view class="home-all-entry-icon-wrap">
+          <image class="home-all-entry-icon" src="/images/icons/benefits/more.svg" mode="aspectFit"></image>
+        </view>
+        <text class="home-all-entry-label">全部项目</text>
+        <text class="home-all-entry-hint">二级分类</text>
+      </view>
+    </view>
+
+    <view class="surge-section" wx:if="{{surgeFeaturedList.length > 0}}">
+      <view class="surge-header">
+        <text class="surge-title">热度飙升</text>
+        <text class="surge-more" bindtap="onSurgeMore">Top50强</text>
+      </view>
+      <scroll-view class="surge-scroll" scroll-x enable-flex>
+        <view class="surge-track">
+          <view class="surge-card-wrap" wx:for="{{surgeFeaturedList}}" wx:key="id">
+            <project-card project="{{item}}" bind:tap="onProjectTap"></project-card>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
 
     <view class="project-list">
       <view class="project-column" wx:for="{{projectColumns}}" wx:key="index" wx:for-index="colIndex" wx:for-item="column">

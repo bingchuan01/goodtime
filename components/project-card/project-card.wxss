@@ -103,8 +103,31 @@
 }
 
 .store-count {
-  color: #666;
+  color: #999;
+  font-size: 24rpx;
+}
+
+.algo-tag-row {
+  margin-bottom: 12rpx;
+}
+
+.algo-tag {
+  display: inline-block;
   font-size: 22rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 4rpx;
+}
+
+.algo-surge {
+  background: #fff3ee;
+  color: #FF6B35;
+  border: 1px solid #FF6B35;
+}
+
+.algo-metric {
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #e8e8e8;
 }
 
 .tag-row {
@@ -155,8 +178,9 @@
 }
 
 .view-count {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: #999;
+  margin-left: auto;
 }
 
 .investment-tag {

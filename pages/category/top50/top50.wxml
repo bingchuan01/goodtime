@@ -1,0 +1,13 @@
+<navigation-bar title="Top50强" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<view class="page">
+  <view class="intro">当月热度飙升池 50 个项目</view>
+  <scroll-view class="list-scroll" scroll-y>
+    <view class="card-list">
+      <project-card wx:for="{{projectList}}" wx:key="id" project="{{item}}" bind:tap="onProjectTap" />
+    </view>
+    <view class="empty" wx:if="{{!loading && !loadError && projectList.length === 0}}">暂无项目</view>
+    <view class="empty" wx:if="{{loadError}}" bindtap="loadPool">加载失败，点击重试</view>
+    <view class="loading" wx:if="{{loading}}">加载中...</view>
+  </scroll-view>
+</view>

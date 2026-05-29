@@ -1,0 +1,43 @@
+<navigation-bar title="全部项目" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<view class="page">
+  <view class="shortcut-bar">
+    <view class="shortcut-chip" bindtap="onTop50Tap">Top50强</view>
+  </view>
+
+  <view class="main">
+    <scroll-view class="left-panel" scroll-y>
+      <view
+        wx:for="{{leftNav}}"
+        wx:key="key"
+        class="left-item {{selectedKey === item.key ? 'active' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onLeftTap"
+      >
+        <text class="left-group" wx:if="{{item.groupName}}">{{item.groupName}}</text>
+        <text class="left-label">{{item.label}}</text>
+      </view>
+    </scroll-view>
+
+    <scroll-view class="right-panel" scroll-y>
+      <view wx:if="{{selectedItem && !selectedItem.directZone}}" class="right-inner">
+        <view class="right-header">
+          <text class="right-title">{{selectedItem.label}}</text>
+          <text class="browse-all" bindtap="onBrowseAll">查看全部</text>
+        </view>
+        <view class="tag-grid" wx:if="{{rightTags.length}}">
+          <view
+            wx:for="{{rightTags}}"
+            wx:key="*this"
+            class="tag-chip"
+            data-tag="{{item}}"
+            bindtap="onTagTap"
+          >{{item}}</view>
+        </view>
+        <view class="empty-tags" wx:else>
+          <text>暂无二级标签，可查看全部项目</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</view>

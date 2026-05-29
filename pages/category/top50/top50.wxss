@@ -1,0 +1,29 @@
+.page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+}
+
+.intro {
+  padding: 20rpx 24rpx;
+  font-size: 24rpx;
+  color: #999;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.list-scroll {
+  flex: 1;
+}
+
+.card-list {
+  padding: 20rpx;
+}
+
+.empty, .loading {
+  text-align: center;
+  padding: 60rpx;
+  color: #999;
+  font-size: 26rpx;
+}

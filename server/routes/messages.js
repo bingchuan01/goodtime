@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { db, ensureUser } = require('../db');
+const { recordConsult } = require('../lib/project-stats');
 
 const PREVIEW_LEN = 40;
 
@@ -42,7 +43,7 @@ function toDetailRow(m, sender, ums) {
 router.post('/', (req, res) => {
   try {
     const userId = req.userId;
-    let { recipientId, recipientName, subject, body, contact } = req.body || {};
+    let { recipientId, recipientName, subject, body, contact, projectId } = req.body || {};
     subject = String(subject || '').trim();
     body = String(body || '').trim();
     contact = contact != null ? String(contact).trim() : '';
@@ -75,6 +76,15 @@ router.post('/', (req, res) => {
     const row = db.prepare('SELECT * FROM messages WHERE id = ?').get(id);
     const sender = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
     const ums = db.prepare('SELECT * FROM user_message_status WHERE message_id = ? AND user_id = ?').get(id, recipientId);
+
+    const pid = parseInt(projectId, 10);
+    if (pid) {
+      const project = db.prepare('SELECT user_id FROM projects WHERE id = ?').get(pid);
+      if (project && String(project.user_id) === String(recipientId)) {
+        recordConsult(pid, userId);
+      }
+    }
+
     res.status(201).json({
       code: 0,
       data: toDetailRow(row, sender, ums),

@@ -1,4 +1,6 @@
 // category-nav.js
+const ALL_ENTRY_ID = '__all__';
+
 Component({
   properties: {
     categoryList: {
@@ -11,48 +13,48 @@ Component({
     }
   },
   data: {
-    currentIndex: 0
+    currentIndex: 0,
+    displayList: []
   },
   observers: {
-    'currentCategoryId': function(newVal) {
-      const index = this.data.categoryList.findIndex(item => item.id === newVal)
+    currentCategoryId(newVal) {
+      const list = this.data.displayList || [];
+      const index = list.findIndex((item) => item.id === newVal);
       if (index !== -1) {
-        this.setData({
-          currentIndex: index
-        })
+        this.setData({ currentIndex: index });
       }
     },
-    'categoryList': function(newList) {
-      // 初始化图标错误状态
-      if (newList && newList.length > 0) {
-        newList.forEach(item => {
-          if (!item.hasOwnProperty('iconError')) {
-            item.iconError = false
-          }
-        })
+    categoryList(newList) {
+      const list = (newList || []).filter((item) => item && item.id !== ALL_ENTRY_ID);
+      list.forEach((item) => {
+        if (!Object.prototype.hasOwnProperty.call(item, 'iconError')) {
+          item.iconError = false;
+        }
+      });
+      this.setData({ displayList: list });
+      const cid = this.properties.currentCategoryId;
+      const index = list.findIndex((item) => item.id === cid);
+      if (index !== -1) {
+        this.setData({ currentIndex: index });
       }
     }
   },
   methods: {
     onCategoryTap(e) {
-      const { index, id } = e.currentTarget.dataset
-      this.setData({
-        currentIndex: index
-      })
+      const { index, id } = e.currentTarget.dataset;
+      this.setData({ currentIndex: index });
       this.triggerEvent('change', {
         categoryId: id,
-        category: this.data.categoryList[index]
-      })
+        category: this.data.displayList[index]
+      });
     },
     onIconError(e) {
-      const index = e.currentTarget.dataset.index
-      const categoryList = this.data.categoryList
-      if (categoryList && categoryList[index]) {
-        categoryList[index].iconError = true
-        this.setData({
-          categoryList: categoryList
-        })
+      const index = e.currentTarget.dataset.index;
+      const displayList = [...(this.data.displayList || [])];
+      if (displayList[index]) {
+        displayList[index] = { ...displayList[index], iconError: true };
+        this.setData({ displayList });
       }
     }
   }
-})
+});

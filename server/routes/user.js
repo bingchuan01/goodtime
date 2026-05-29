@@ -549,4 +549,42 @@ router.get('/videos', auth, (req, res) => {
   }
 });
 
+/** 我的收藏 */
+router.get('/favorites', auth, (req, res) => {
+  try {
+    const userId = req.userId;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const pageSize = Math.min(50, Math.max(1, parseInt(req.query.pageSize, 10) || 10));
+    const offset = (page - 1) * pageSize;
+
+    const rows = db.prepare(`
+      SELECT p.* FROM user_favorites uf
+      INNER JOIN projects p ON p.id = uf.project_id
+      WHERE uf.user_id = ? AND p.status = 'approved'
+      ORDER BY uf.created_at DESC
+      LIMIT ? OFFSET ?
+    `).all(userId, pageSize + 1, offset);
+
+    const hasMore = rows.length > pageSize;
+    const list = rows.slice(0, pageSize).map((p) => {
+      let carouselImages = [];
+      try { carouselImages = JSON.parse(p.carousel_images || '[]'); } catch (e) {}
+      const coverUrl = (carouselImages[0] || p.video_poster || '');
+      return {
+        id: String(p.id),
+        title: p.title,
+        coverUrl,
+        coverType: p.cover_type || 'image',
+        category: p.category_tag || p.category_id || '',
+        investmentAmount: p.base_amount && p.max_amount ? `¥${p.base_amount}-${p.max_amount}万` : (p.base_amount ? `¥${p.base_amount}万` : '')
+      };
+    });
+
+    res.json({ code: 0, data: { list, hasMore }, message: 'ok' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '获取收藏失败' });
+  }
+});
+
 module.exports = router;

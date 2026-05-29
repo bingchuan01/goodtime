@@ -24,7 +24,8 @@ Page({
       phone: '',
       address: ''
     },
-    showForm: false
+    showForm: false,
+    isFavorited: false
   },
 
   onLoad(options) {
@@ -103,9 +104,12 @@ Page({
     }
     const pubLvl = project.publisher && project.publisher.memberLevel;
     const publisherMemberBadgeClass = memberUtil.getMemberBadgeClass(pubLvl);
+    const algoTags = project.algoTags || [];
+    const isFavorited = !!project.isFavorited;
     if (project.memberLevel === 'V8' && project.coverType === 'video' && project.videoUrl) {
       this.setData({
-        project: { ...project, displayType: 'video', publisherMemberBadgeClass },
+        project: { ...project, displayType: 'video', publisherMemberBadgeClass, algoTags },
+        isFavorited,
         loading: false
       });
     } else {
@@ -114,9 +118,11 @@ Page({
           ...project,
           displayType: 'carousel',
           carouselImages: project.carouselImages || [],
-          publisherMemberBadgeClass
+          publisherMemberBadgeClass,
+          algoTags
         },
         carouselImages: project.carouselImages || [],
+        isFavorited,
         loading: false
       });
     }
@@ -198,8 +204,23 @@ Page({
     const recipientId = project.publisher.id || `pub_${project.id}`;
     const recipientName = project.publisher.nickname || '';
     wx.navigateTo({
-      url: `/pages/message-compose/message-compose?recipientId=${encodeURIComponent(recipientId)}&recipientName=${encodeURIComponent(recipientName)}`
+      url: `/pages/message-compose/message-compose?recipientId=${encodeURIComponent(recipientId)}&recipientName=${encodeURIComponent(recipientName)}&projectId=${encodeURIComponent(project.id)}`
     });
+  },
+
+  async onToggleFavorite() {
+    if (!auth.checkLogin()) {
+      auth.requireLogin();
+      return;
+    }
+    try {
+      const res = await api.toggleProjectFavorite(this.data.projectId);
+      const favorited = !!(res && res.favorited);
+      this.setData({ isFavorited: favorited, 'project.isFavorited': favorited });
+      wx.showToast({ title: favorited ? '已收藏' : '已取消', icon: 'none' });
+    } catch (e) {
+      wx.showToast({ title: '操作失败', icon: 'none' });
+    }
   },
 
   // 合作咨询
@@ -283,6 +304,9 @@ Page({
   // 分享
   onShareAppMessage() {
     const path = this.buildSharePath();
+    if (this.data.projectId) {
+      api.reportProjectShare(this.data.projectId).catch(() => {});
+    }
     if (auth.checkLogin()) {
       const me = auth.getUserInfo();
       if (me && me.id) {

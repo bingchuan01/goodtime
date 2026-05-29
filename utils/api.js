@@ -386,8 +386,48 @@ function addComment(videoId, content) {
  * @param {object} params - { page, pageSize, categoryId, displayZone }
  */
 function getProjectList(params = {}) {
-  const { page = 1, pageSize = 10, categoryId, displayZone } = params;
-  return get('/projects', { page, pageSize, categoryId, displayZone }, {}, true);
+  const {
+    page = 1,
+    pageSize = 10,
+    categoryId,
+    displayZone,
+    categoryTag,
+    inSurgePool,
+    featuredSurge,
+    priceRange,
+    region,
+    priceMin,
+    priceMax
+  } = params;
+  return get('/projects', {
+    page,
+    pageSize,
+    categoryId,
+    displayZone,
+    categoryTag,
+    inSurgePool,
+    featuredSurge,
+    priceRange,
+    region,
+    priceMin,
+    priceMax
+  }, {}, true);
+}
+
+function getSurgePool() {
+  return get('/projects/surge-pool', {}, {}, true);
+}
+
+function toggleProjectFavorite(projectId) {
+  return post(`/projects/${projectId}/favorite`, {});
+}
+
+function reportProjectShare(projectId) {
+  return post(`/projects/${projectId}/share`, {});
+}
+
+function getUserFavorites(page = 1, pageSize = 20) {
+  return get('/user/favorites', { page, pageSize });
 }
 
 /**
@@ -427,6 +467,10 @@ function getConfig(key) {
  */
 function getCategories() {
   return get('/categories');
+}
+
+function getCategoryNav() {
+  return get('/projects/nav', {}, {}, true);
 }
 
 // ============ 搜索相关API ============
@@ -715,6 +759,10 @@ module.exports = {
   
   // 项目相关
   getProjectList,
+  getSurgePool,
+  toggleProjectFavorite,
+  reportProjectShare,
+  getUserFavorites,
   getProjectDetail,
   publishProject,
   updateProject,
@@ -722,6 +770,7 @@ module.exports = {
 
   // 分类相关
   getCategories,
+  getCategoryNav,
 
   // 搜索相关
   searchProjects,

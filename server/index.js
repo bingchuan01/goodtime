@@ -38,7 +38,7 @@ app.use('/api/config', configRouter);
 app.use('/api/messages', auth, messagesRouter);
 app.use('/api/member/catalog', memberCatalogRouter);
 app.use('/api/member', auth, memberRouter);
-app.use('/api/leads', leadsRouter);
+app.use('/api/leads', optionalAuth, leadsRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/admin', adminRouter);
@@ -55,6 +55,12 @@ const PORT = process.env.PORT || 3000;
 init()
   .then(() => {
     reconcileAllExpiredMemberships();
+    try {
+      const { startSurgePoolScheduler } = require('./lib/surge-scheduler');
+      startSurgePoolScheduler();
+    } catch (e) {
+      console.warn('surge scheduler:', e.message);
+    }
     app.listen(PORT, () => {
       console.log(`好时机 API 已启动: http://localhost:${PORT}/api`);
       console.log(`上传文件目录: ${UPLOAD_DIR}`);

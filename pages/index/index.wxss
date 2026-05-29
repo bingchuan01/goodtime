@@ -41,6 +41,68 @@ page {
   height: 0;
 }
 
+.home-category-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
+  background-color: #fff;
+  flex-shrink: 0;
+}
+
+.home-category-nav {
+  flex: 1;
+  min-width: 0;
+  width: 0;
+}
+
+.home-all-entry {
+  flex-shrink: 0;
+  width: 132rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 10rpx;
+  border-left: 1px solid #f0f0f0;
+  background: #fff;
+  box-shadow: -10rpx 0 20rpx rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+}
+
+.home-all-entry-icon-wrap {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background-color: #FFF5F0;
+  border: 1px solid #ffd4c2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8rpx;
+}
+
+.home-all-entry-icon {
+  width: 48rpx;
+  height: 48rpx;
+}
+
+.home-all-entry-label {
+  font-size: 24rpx;
+  color: #FF6B35;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.home-all-entry-hint {
+  font-size: 20rpx;
+  color: #999;
+  white-space: nowrap;
+  margin-top: 2rpx;
+  line-height: 1.2;
+}
+
 /* ========== 首页展区：轮播 + 看板双层 ========== */
 .hero-zone {
   position: relative;
@@ -181,4 +243,47 @@ page {
   padding: 30rpx;
   font-size: 24rpx;
   color: #999;
+}
+
+.surge-section {
+  margin: 0 20rpx 20rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 20rpx 0 10rpx;
+}
+
+.surge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20rpx 16rpx;
+}
+
+.surge-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #FF6B35;
+}
+
+.surge-more {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.surge-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.surge-track {
+  display: flex;
+  flex-direction: row;
+  padding: 0 12rpx;
+}
+
+.surge-card-wrap {
+  width: 320rpx;
+  flex-shrink: 0;
+  margin: 0 8rpx;
+  display: inline-block;
 }

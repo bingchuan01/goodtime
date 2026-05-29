@@ -131,6 +131,20 @@
   margin-bottom: 30rpx;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.favorite-btn {
+  background: #f0f0f0;
+  color: #666;
+  padding: 12rpx 24rpx;
+  border-radius: 20rpx;
+  font-size: 26rpx;
+}
+
 .detail-title {
   font-size: 32rpx;
   font-weight: bold;
@@ -279,6 +293,32 @@
   color: #666;
   line-height: 1.8;
   display: block;
+}
+
+/* 算法指标 */
+.algo-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.algo-stat-tag {
+  font-size: 22rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 6rpx;
+}
+
+.algo-stat-tag.algo-surge {
+  background: #fff3ee;
+  color: #FF6B35;
+  border: 1px solid #FF6B35;
+}
+
+.algo-stat-tag.algo-metric {
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #e8e8e8;
 }
 
 /* 数据指标 */

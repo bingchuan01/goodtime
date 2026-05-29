@@ -683,6 +683,40 @@ async function init() {
   } catch (e) {
     if (!/duplicate column name/i.test(e.message)) throw e;
   }
+  innerDb.run(`CREATE TABLE IF NOT EXISTS user_favorites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    project_id INTEGER NOT NULL,
+    created_at TEXT DEFAULT (datetime('now', 'localtime')),
+    UNIQUE(user_id, project_id)
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS project_stats (
+    project_id INTEGER PRIMARY KEY,
+    consult_uv INTEGER DEFAULT 0,
+    favorite_uv INTEGER DEFAULT 0,
+    share_pv INTEGER DEFAULT 0
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS project_consult_users (
+    project_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    source TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now', 'localtime')),
+    UNIQUE(project_id, user_id)
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS surge_pool (
+    project_id INTEGER NOT NULL,
+    pool_month TEXT NOT NULL,
+    pool_rank INTEGER NOT NULL,
+    is_home_featured INTEGER DEFAULT 0,
+    PRIMARY KEY(project_id, pool_month)
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS surge_pool_meta (
+    pool_month TEXT PRIMARY KEY,
+    computed_at TEXT
+  )`);
+  innerDb.run('CREATE INDEX IF NOT EXISTS idx_surge_pool_month ON surge_pool(pool_month)');
+  innerDb.run('CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id)');
+  innerDb.run('CREATE INDEX IF NOT EXISTS idx_user_favorites_project ON user_favorites(project_id)');
   innerDb.run('CREATE INDEX IF NOT EXISTS idx_exp_ledger_user ON exp_ledger(user_id)');
   innerDb.run('CREATE INDEX IF NOT EXISTS idx_point_ledger_user ON point_ledger(user_id)');
   innerDb.run('CREATE INDEX IF NOT EXISTS idx_point_orders_user ON point_orders(user_id)');
@@ -749,6 +783,13 @@ async function init() {
     const hash = crypto.createHash('sha256').update('admin123').digest('hex');
     innerDb.run("INSERT INTO admin_users (username, password_hash, role) VALUES ('admin', '" + hash + "', 'admin')");
     save();
+  }
+
+  try {
+    const { ensureSurgePoolCurrent } = require('./lib/surge-pool');
+    ensureSurgePoolCurrent();
+  } catch (e) {
+    console.warn('surge pool init:', e.message);
   }
 
   saveTimer = setInterval(save, 15000);

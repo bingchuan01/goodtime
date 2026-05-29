@@ -27,7 +27,8 @@ Page({
     hasMore: true,
     loading: false,
     refreshing: false,
-    loadError: false
+    loadError: false,
+    surgeFeaturedList: []
   },
 
   onLoad() {
@@ -47,6 +48,7 @@ Page({
     this.loadCategories();
     this.loadDashboard();
     this.loadHomeCarousel();
+    this.loadSurgeFeatured();
     this.loadProjects();
   },
 
@@ -338,6 +340,16 @@ Page({
     }
   },
 
+  async loadSurgeFeatured() {
+    try {
+      const res = await api.getProjectList({ featuredSurge: '1', page: 1, pageSize: 10 });
+      const list = res && res.list ? res.list : [];
+      this.setData({ surgeFeaturedList: list });
+    } catch (e) {
+      this.setData({ surgeFeaturedList: [] });
+    }
+  },
+
   async loadProjects() {
     if (this.data.loading || !this.data.hasMore) return;
     this.setData({ loading: true, loadError: false });
@@ -391,6 +403,7 @@ Page({
       loadError: false
     });
     this.loadHomeCarousel();
+    this.loadSurgeFeatured();
     setTimeout(() => {
       this.loadProjects();
       this.setData({ refreshing: false });
@@ -399,6 +412,10 @@ Page({
 
   onLoadMore() {
     this.loadProjects();
+  },
+
+  onAllProjectsTap() {
+    wx.navigateTo({ url: '/pages/category/all/all' });
   },
 
   onCategoryChange(e) {
@@ -417,6 +434,10 @@ Page({
     wx.navigateTo({
       url: '/pages/search/search'
     });
+  },
+
+  onSurgeMore() {
+    wx.navigateTo({ url: '/pages/category/top50/top50' });
   },
 
   onLocationChange() {
