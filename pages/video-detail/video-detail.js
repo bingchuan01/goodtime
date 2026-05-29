@@ -1,6 +1,8 @@
 // 项目详情页
 const api = require('../../utils/api');
 const util = require('../../utils/util');
+const memberUtil = require('../../utils/member');
+const auth = require('../../utils/auth');
 
 Page({
   data: {
@@ -22,7 +24,8 @@ Page({
       phone: '',
       address: ''
     },
-    showForm: false
+    showForm: false,
+    isFavorited: false
   },
 
   onLoad(options) {
@@ -40,6 +43,17 @@ Page({
 
     const coverType = decodeURIComponent(options.coverType || 'image');
     const memberLevel = decodeURIComponent(options.memberLevel || '');
+    const fromUid = options.fromUid || options.refUserId || '';
+    const shareId = options.shareId || '';
+
+    if (fromUid) {
+      api.saveShareRef(fromUid, shareId);
+    }
+
+    this._shareRefUserId = fromUid ? String(fromUid) : '';
+    this._shareId = shareId ? String(shareId) : '';
+    this._pageEnterAt = Date.now();
+    this._clickReported = false;
 
     this.setData({ 
       projectId,
@@ -51,6 +65,7 @@ Page({
     if (prefetched && prefetched.id === String(projectId) && prefetched.data) {
       getApp().globalData.prefetchedProject = null;
       this.applyProjectData(prefetched.data);
+      this.setData({ showContent: true });
       return;
     }
     this.loadProjectDetail();
@@ -58,10 +73,28 @@ Page({
 
   onReady() {
     this.videoContext = wx.createVideoContext('projectVideo', this);
-    // 延迟至过渡动画结束后再显示内容，避免底部详情图在切换时闪现
-    setTimeout(() => {
-      this.setData({ showContent: true });
-    }, 350);
+    this.setData({ showContent: true });
+  },
+
+  onUnload() {
+    this.reportShareClickIfNeeded();
+  },
+
+  reportShareClickIfNeeded() {
+    if (this._clickReported) return;
+    const sharerId = this._shareRefUserId;
+    if (!sharerId || !auth.checkLogin()) return;
+    const me = auth.getUserInfo();
+    if (!me || !me.id || me.id === sharerId) return;
+    const dwellSeconds = Math.floor((Date.now() - (this._pageEnterAt || Date.now())) / 1000);
+    if (dwellSeconds < 5) return;
+    this._clickReported = true;
+    api.postGrowthShareReport({
+      type: 'click',
+      refUserId: sharerId,
+      shareId: this._shareId || '',
+      dwellSeconds
+    }).catch(() => {});
   },
 
   applyProjectData(project) {
@@ -69,15 +102,27 @@ Page({
     if (project.publisher && !project.publisher.avatar) {
       project.publisher.avatar = '/images/icons/default-avatar.svg';
     }
+    const pubLvl = project.publisher && project.publisher.memberLevel;
+    const publisherMemberBadgeClass = memberUtil.getMemberBadgeClass(pubLvl);
+    const algoTags = project.algoTags || [];
+    const isFavorited = !!project.isFavorited;
     if (project.memberLevel === 'V8' && project.coverType === 'video' && project.videoUrl) {
       this.setData({
-        project: { ...project, displayType: 'video' },
+        project: { ...project, displayType: 'video', publisherMemberBadgeClass, algoTags },
+        isFavorited,
         loading: false
       });
     } else {
       this.setData({
-        project: { ...project, displayType: 'carousel', carouselImages: project.carouselImages || [] },
+        project: {
+          ...project,
+          displayType: 'carousel',
+          carouselImages: project.carouselImages || [],
+          publisherMemberBadgeClass,
+          algoTags
+        },
         carouselImages: project.carouselImages || [],
+        isFavorited,
         loading: false
       });
     }
@@ -159,8 +204,23 @@ Page({
     const recipientId = project.publisher.id || `pub_${project.id}`;
     const recipientName = project.publisher.nickname || '';
     wx.navigateTo({
-      url: `/pages/message-compose/message-compose?recipientId=${encodeURIComponent(recipientId)}&recipientName=${encodeURIComponent(recipientName)}`
+      url: `/pages/message-compose/message-compose?recipientId=${encodeURIComponent(recipientId)}&recipientName=${encodeURIComponent(recipientName)}&projectId=${encodeURIComponent(project.id)}`
     });
+  },
+
+  async onToggleFavorite() {
+    if (!auth.checkLogin()) {
+      auth.requireLogin();
+      return;
+    }
+    try {
+      const res = await api.toggleProjectFavorite(this.data.projectId);
+      const favorited = !!(res && res.favorited);
+      this.setData({ isFavorited: favorited, 'project.isFavorited': favorited });
+      wx.showToast({ title: favorited ? '已收藏' : '已取消', icon: 'none' });
+    } catch (e) {
+      wx.showToast({ title: '操作失败', icon: 'none' });
+    }
   },
 
   // 合作咨询
@@ -197,57 +257,25 @@ Page({
 
   // 提交表单
   async onSubmitForm() {
-    const { name, phone, address } = this.data.formData;
-    
-    if (!name || !name.trim()) {
-      wx.showToast({
-        title: '请输入姓名',
-        icon: 'none'
-      });
+    const { formData, projectId } = this.data;
+    if (!formData.name || !formData.phone) {
+      wx.showToast({ title: '请填写姓名和电话', icon: 'none' });
       return;
     }
-    
-    if (!phone || !phone.trim()) {
-      wx.showToast({
-        title: '请输入手机号',
-        icon: 'none'
-      });
-      return;
-    }
-    
-    // 简单的手机号验证
-    const phoneReg = /^1[3-9]\d{9}$/;
-    if (!phoneReg.test(phone)) {
-      wx.showToast({
-        title: '请输入正确的手机号',
-        icon: 'none'
-      });
-      return;
-    }
-    
-    if (!address || !address.trim()) {
-      wx.showToast({
-        title: '请输入收件地址',
-        icon: 'none'
-      });
-      return;
-    }
-
     wx.showLoading({ title: '提交中...' });
     try {
-      await api.submitLead(this.data.projectId, {
-        name: name.trim(),
-        phone: phone.trim(),
-        address: (address || '').trim()
+      await api.submitLead({
+        projectId,
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        address: (formData.address || '').trim()
       });
       wx.hideLoading();
       wx.showToast({ title: '提交成功', icon: 'success' });
-      this.setData({
-        showForm: false,
-        formData: { name: '', phone: '', address: '' }
-      });
+      this.setData({ showForm: false, formData: { name: '', phone: '', address: '' } });
     } catch (e) {
       wx.hideLoading();
+      wx.showToast({ title: (e && e.message) || '提交失败', icon: 'none' });
     }
   },
 
@@ -259,11 +287,38 @@ Page({
     return num.toString();
   },
 
+  buildSharePath() {
+    const id = this.data.projectId;
+    let path = `/pages/video-detail/video-detail?id=${id}`;
+    if (auth.checkLogin()) {
+      const me = auth.getUserInfo();
+      const shareId = `${me && me.id ? me.id : 'u'}_${Date.now()}`;
+      this._pendingShareId = shareId;
+      if (me && me.id) {
+        path += `&fromUid=${encodeURIComponent(me.id)}&shareId=${encodeURIComponent(shareId)}`;
+      }
+    }
+    return path;
+  },
+
   // 分享
   onShareAppMessage() {
+    const path = this.buildSharePath();
+    if (this.data.projectId) {
+      api.reportProjectShare(this.data.projectId).catch(() => {});
+    }
+    if (auth.checkLogin()) {
+      const me = auth.getUserInfo();
+      if (me && me.id) {
+        api.postGrowthShareReport({
+          type: 'share',
+          shareId: this._pendingShareId || ''
+        }).catch(() => {});
+      }
+    }
     return {
       title: (this.data.project && this.data.project.title) || '分享项目',
-      path: `/pages/video-detail/video-detail?id=${this.data.projectId}`
+      path
     };
   }
 });

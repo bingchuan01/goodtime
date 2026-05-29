@@ -1,74 +1,42 @@
 const express = require('express');
 const router = express.Router();
 const { db, ensureUser } = require('../db');
+const { getPublishBlockMessage } = require('../lib/member-active');
+const { canContentEdit, consumeContentEdit } = require('../lib/growth/content-edit-pool');
+const {
+  applyExtendDisplayCoupon,
+  applyPinCoupon,
+  getProjectDisplayInfo
+} = require('../lib/growth/coupon-use');
+const { getProjectStats, recordShare, recountFavoriteUv } = require('../lib/project-stats');
+const { pickCardAlgoTag, buildDetailAlgoTags } = require('../lib/algo-tag');
+const { LIST_ORDER, normalizeCoverUrl, enrichListRow } = require('../lib/project-list');
+const {
+  ensureSurgePoolCurrent,
+  getSurgePoolMap,
+  getHomeFeaturedIds,
+  getPoolProjectIds,
+  currentPoolMonth,
+  hasSurgeTag
+} = require('../lib/surge-pool');
+const { GROUPS, PRICE_RANGES } = require('../lib/category-nav-data');
 
-function normalizeCoverUrl(url) {
-  if (!url) return '';
-  let out = String(url).trim();
-  if (!out) return '';
-  // 已是 https，直接返回（真机只允许 https）
-  if (out.indexOf('https://') === 0) return out;
-  // 协议相对链接
-  if (out.indexOf('//') === 0) return 'https:' + out;
-  // 早期 http 的 api.goodtime.work 升级为 https
-  if (out.indexOf('http://api.goodtime.work') === 0) return out.replace('http://', 'https://');
-  // localhost / 内网 URL：真机无法访问，只保留路径拼上线上域名（需服务器 uploads 已同步）
-  const prodBase = process.env.UPLOAD_BASE_URL || 'https://api.goodtime.work';
-  if (out.indexOf('http://localhost') === 0 || out.indexOf('http://127.0.0.1') === 0 || out.indexOf('http://192.168.') === 0) {
-    try {
-      const u = new URL(out);
-      const path = u.pathname || '';
-      if (path.indexOf('/uploads/') === 0) return prodBase + path;
-    } catch (e) {}
-  }
-  // 其他 http：若路径含 /uploads/ 则用 prodBase 替换域名，避免代理/环境差异导致封面丢失
-  if (out.indexOf('http://') === 0) {
-    try {
-      const u = new URL(out);
-      const path = u.pathname || '';
-      if (path.indexOf('/uploads/') === 0) return prodBase + path;
-    } catch (e) {}
-    return '';
-  }
-  return out;
+function parseAmount(val) {
+  const n = parseFloat(String(val || '').replace(/[^\d.]/g, ''));
+  return Number.isFinite(n) ? n : null;
 }
 
-function projectToListRow(p) {
-  const publisher = db.prepare('SELECT id, nickname, avatar, member_level FROM users WHERE id = ?').get(p.user_id);
-  let carouselImages = [];
-  try {
-    carouselImages = JSON.parse(p.carousel_images || '[]');
-  } catch (e) {}
-  const rawCoverUrl = (Array.isArray(carouselImages) && carouselImages.length > 0)
-    ? carouselImages[0]
-    : (p.video_poster || '');
-  const coverUrl = normalizeCoverUrl(rawCoverUrl);
-  return {
-    id: String(p.id),
-    title: p.title,
-    ip: p.ip_address || '',
-    category: p.category_tag || p.category_id || '',
-    storeCount: p.store_count || '',
-    viewCount: p.view_count || 0,
-    investmentAmount: p.base_amount && p.max_amount ? `¥${p.base_amount}-${p.max_amount}万` : (p.base_amount ? `¥${p.base_amount}万` : ''),
-    isOfficial: !!p.is_official,
-    memberLevel: p.member_level || '',
-    coverType: p.cover_type || 'image',
-    coverUrl,
-    videoUrl: p.video_url || '',
-    videoPoster: normalizeCoverUrl(p.video_poster || ''),
-    publisher: publisher ? {
-      id: publisher.id,
-      nickname: publisher.nickname || '未知',
-      avatar: publisher.avatar || '',
-      memberLevel: publisher.member_level || '',
-      ip: p.ip_address || ''
-    } : { id: p.user_id, nickname: '未知', avatar: '', memberLevel: '', ip: p.ip_address || '' },
-    categoryTag: p.category_tag || '',
-    clueCount: p.clue_count || 0,
-    status: p.status,
-    displayZone: p.display_zone || ''
-  };
+function projectMatchesPrice(p, priceMin, priceMax) {
+  const base = parseAmount(p.base_amount);
+  const max = parseAmount(p.max_amount) ?? base;
+  if (base == null && max == null) return false;
+  const low = base != null ? base : max;
+  const high = max != null ? max : base;
+  const min = priceMin != null ? Number(priceMin) : null;
+  const maxCap = priceMax != null ? Number(priceMax) : null;
+  if (min != null && high < min) return false;
+  if (maxCap != null && low > maxCap) return false;
+  return true;
 }
 
 function normalizeDetailContent(html) {
@@ -79,7 +47,6 @@ function normalizeDetailContent(html) {
     .replace(/http:\/\/localhost(:\d+)?/g, prodBase)
     .replace(/http:\/\/127\.0\.0\.1(:\d+)?/g, prodBase)
     .replace(/http:\/\/192\.168\.\d+\.\d+(:\d+)?/g, prodBase);
-  // 详情图在真机居中：为 img 补全居中样式，避免偏左、右侧留白
   s = s.replace(/<img(\s[^>]*?)style="([^"]*)"([^>]*)>/gi, (match, before, style, after) => {
     const center = 'display:block;margin-left:auto;margin-right:auto;';
     if (/display\s*:\s*block/i.test(style) && /margin-left\s*:\s*auto/i.test(style)) return match;
@@ -90,7 +57,7 @@ function normalizeDetailContent(html) {
   return s;
 }
 
-function projectToDetailRow(p) {
+function projectToDetailRow(p, userId) {
   const publisher = db.prepare('SELECT id, nickname, avatar, member_level FROM users WHERE id = ?').get(p.user_id);
   let carouselImages = [];
   try {
@@ -99,6 +66,17 @@ function projectToDetailRow(p) {
   const normalizedCarousel = Array.isArray(carouselImages)
     ? carouselImages.map((url) => normalizeCoverUrl(url)).filter(Boolean)
     : [];
+  const isInSurgePool50 = !!db.prepare(
+    'SELECT 1 FROM surge_pool WHERE pool_month = ? AND project_id = ?'
+  ).get(currentPoolMonth(), p.id);
+  const showSurgeTag = hasSurgeTag(p.id);
+  const stats = getProjectStats(p.id);
+  let isFavorited = false;
+  if (userId) {
+    isFavorited = !!db.prepare(
+      'SELECT 1 FROM user_favorites WHERE user_id = ? AND project_id = ?'
+    ).get(userId, p.id);
+  }
   return {
     id: String(p.id),
     title: p.title,
@@ -116,7 +94,7 @@ function projectToDetailRow(p) {
     introduction: p.introduction || '',
     memberLevel: p.member_level || 'V6',
     isOfficial: !!p.is_official,
-    viewCount: p.view_count || 0,
+    viewCount: stats.view,
     clueCount: p.clue_count || 0,
     publisher: publisher ? {
       id: publisher.id,
@@ -127,42 +105,169 @@ function projectToDetailRow(p) {
     } : { id: p.user_id, nickname: '未知', avatar: '', memberLevel: '', ip: p.ip_address || '' },
     status: p.status,
     displayZone: p.display_zone || '',
-    rejectReason: p.reject_reason || ''
+    rejectReason: p.reject_reason || '',
+    publishedAt: p.published_at || '',
+    hasSurgeTag: showSurgeTag,
+    isInSurgePool: isInSurgePool50,
+    isFavorited,
+    stats,
+    algoTags: buildDetailAlgoTags(showSurgeTag, stats)
   };
 }
 
-/** 项目列表（分页，仅已通过，支持分类/展区） */
+function fetchProjectsByIds(ids) {
+  if (!ids.length) return [];
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = db.prepare(`SELECT * FROM projects WHERE id IN (${placeholders}) AND status = 'approved'`).all(...ids);
+  const map = new Map(rows.map((r) => [r.id, r]));
+  return ids.map((id) => map.get(id)).filter(Boolean);
+}
+
+/** 分类导航结构 */
+router.get('/nav', (req, res) => {
+  res.json({ code: 0, data: { groups: GROUPS, priceRanges: PRICE_RANGES }, message: 'ok' });
+});
+
+/** 当月飙升池（Top50） */
+router.get('/surge-pool', (req, res) => {
+  try {
+    ensureSurgePoolCurrent();
+    const month = currentPoolMonth();
+    const ids = getPoolProjectIds(month);
+    const surgeMap = getSurgePoolMap(month);
+    const list = fetchProjectsByIds(ids).map((p) => enrichListRow(p, surgeMap));
+    res.json({ code: 0, data: { list, month, total: list.length }, message: 'ok' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '获取飙升池失败' });
+  }
+});
+
+/** 项目列表 */
 router.get('/', (req, res) => {
   try {
+    ensureSurgePoolCurrent();
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const pageSize = Math.min(50, Math.max(1, parseInt(req.query.pageSize, 10) || 10));
     const categoryId = (req.query.categoryId || req.query.category || '').trim();
+    const categoryTag = (req.query.categoryTag || req.query.tag || '').trim();
     const displayZone = (req.query.displayZone || req.query.zone || '').trim();
+    const region = (req.query.region || req.query.address || '').trim();
+    const inSurgePool = req.query.inSurgePool === '1' || req.query.top50 === '1';
+    const featuredSurge = req.query.featuredSurge === '1';
+    const priceRangeId = (req.query.priceRange || '').trim();
     const offset = (page - 1) * pageSize;
+    const month = currentPoolMonth();
+    const surgeMap = getSurgePoolMap(month);
 
-    let sql = 'SELECT * FROM projects WHERE status = ?';
-    const params = ['approved'];
+    if (featuredSurge) {
+      const limit = Math.min(10, parseInt(req.query.limit, 10) || 10);
+      const ids = getHomeFeaturedIds(month).slice(0, limit);
+      const list = fetchProjectsByIds(ids).map((p) => enrichListRow(p, surgeMap));
+      return res.json({ code: 0, data: { list, hasMore: false }, message: 'ok' });
+    }
+
+    let priceMin = req.query.priceMin != null ? parseFloat(req.query.priceMin) : null;
+    let priceMax = req.query.priceMax != null ? parseFloat(req.query.priceMax) : null;
+    if (priceRangeId) {
+      const pr = PRICE_RANGES.find((r) => r.id === priceRangeId);
+      if (pr) {
+        priceMin = pr.min;
+        priceMax = pr.max;
+      }
+    }
+
+    let sql = 'SELECT p.* FROM projects p';
+    const params = [];
+    const where = ['p.status = ?'];
+    params.push('approved');
+
+    if (inSurgePool) {
+      sql += ' INNER JOIN surge_pool sp ON sp.project_id = p.id AND sp.pool_month = ?';
+      params.push(month);
+    }
 
     if (categoryId) {
-      sql += ' AND (category_id = ? OR category_tag = ?)';
+      where.push('(p.category_id = ? OR p.category_tag = ?)');
       params.push(categoryId, categoryId);
     }
+    if (categoryTag) {
+      where.push('p.category_tag = ?');
+      params.push(categoryTag);
+    }
     if (displayZone) {
-      sql += ' AND display_zone = ?';
+      where.push('p.display_zone = ?');
       params.push(displayZone);
     }
+    if (region) {
+      where.push('p.ip_address LIKE ?');
+      params.push(`%${region}%`);
+    }
 
-    sql += ' ORDER BY updated_at DESC LIMIT ? OFFSET ?';
-    params.push(pageSize + 1, offset);
+    sql += ` WHERE ${where.join(' AND ')} ORDER BY ${LIST_ORDER}`;
 
-    const rows = db.prepare(sql).all(...params);
-    const hasMore = rows.length > pageSize;
-    const list = rows.slice(0, pageSize).map(projectToListRow);
+    let rows = db.prepare(sql).all(...params);
+
+    if (priceMin != null || priceMax != null) {
+      rows = rows.filter((p) => projectMatchesPrice(p, priceMin, priceMax));
+    }
+
+    const hasMore = rows.length > offset + pageSize;
+    const slice = rows.slice(offset, offset + pageSize);
+    const list = slice.map((p) => enrichListRow(p, surgeMap));
 
     res.json({ code: 0, data: { list, hasMore }, message: 'ok' });
   } catch (e) {
     console.error(e);
     res.status(500).json({ code: 500, message: '获取列表失败' });
+  }
+});
+
+/** 记录分享 */
+router.post('/:id/share', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!id) return res.status(400).json({ code: 400, message: '无效项目 id' });
+    const p = db.prepare('SELECT id FROM projects WHERE id = ? AND status = ?').get(id, 'approved');
+    if (!p) return res.status(404).json({ code: 404, message: '项目不存在' });
+    recordShare(id);
+    res.json({ code: 0, data: getProjectStats(id), message: 'ok' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '记录分享失败' });
+  }
+});
+
+/** 收藏 toggle */
+router.post('/:id/favorite', (req, res) => {
+  try {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ code: 401, message: '未登录' });
+    const id = parseInt(req.params.id, 10);
+    if (!id) return res.status(400).json({ code: 400, message: '无效项目 id' });
+    const p = db.prepare('SELECT id FROM projects WHERE id = ? AND status = ?').get(id, 'approved');
+    if (!p) return res.status(404).json({ code: 404, message: '项目不存在' });
+
+    const existing = db.prepare(
+      'SELECT id FROM user_favorites WHERE user_id = ? AND project_id = ?'
+    ).get(userId, id);
+    let favorited;
+    if (existing) {
+      db.prepare('DELETE FROM user_favorites WHERE user_id = ? AND project_id = ?').run(userId, id);
+      favorited = false;
+    } else {
+      db.prepare('INSERT INTO user_favorites (user_id, project_id) VALUES (?, ?)').run(userId, id);
+      favorited = true;
+    }
+    recountFavoriteUv(id);
+    res.json({
+      code: 0,
+      data: { favorited, stats: getProjectStats(id) },
+      message: favorited ? '已收藏' : '已取消收藏'
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '操作失败' });
   }
 });
 
@@ -184,7 +289,7 @@ router.get('/:id', (req, res) => {
 
     db.prepare('UPDATE projects SET view_count = view_count + 1 WHERE id = ?').run(id);
     const updated = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
-    res.json({ code: 0, data: projectToDetailRow(updated), message: 'ok' });
+    res.json({ code: 0, data: projectToDetailRow(updated, req.userId || null), message: 'ok' });
   } catch (e) {
     console.error(e);
     res.status(500).json({ code: 500, message: '获取详情失败' });
@@ -201,6 +306,10 @@ router.post('/', (req, res) => {
     if (!title) return res.status(400).json({ code: 400, message: '请填写标题' });
 
     ensureUser(userId);
+    const publishBlock = getPublishBlockMessage(userId);
+    if (publishBlock) {
+      return res.status(403).json({ code: 403, message: publishBlock });
+    }
     const user = db.prepare('SELECT member_level FROM users WHERE id = ?').get(userId);
     const memberLevel = (user && user.member_level) || body.memberLevel || 'V6';
     const coverType = body.coverType || 'carousel';
@@ -245,7 +354,7 @@ router.post('/', (req, res) => {
     if (!row) {
       throw new Error('项目创建后查询失败，id=' + id);
     }
-    res.status(201).json({ code: 0, data: projectToDetailRow(row), message: '提交成功，等待审核' });
+    res.status(201).json({ code: 0, data: projectToDetailRow(row, userId), message: '提交成功，等待审核' });
   } catch (e) {
     console.error('POST /projects 错误:', e);
     const msg = (e && (e.message || (typeof e === 'string' ? e : (e.toString && e.toString())))) || '提交失败';
@@ -253,7 +362,7 @@ router.post('/', (req, res) => {
   }
 });
 
-/** 更新项目（仅作者，且状态为 rejected 时可编辑） */
+/** 更新项目 */
 router.put('/:id', (req, res) => {
   try {
     const userId = req.userId;
@@ -264,16 +373,41 @@ router.put('/:id', (req, res) => {
     const p = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
     if (!p) return res.status(404).json({ code: 404, message: '项目不存在' });
     if (p.user_id !== userId) return res.status(403).json({ code: 403, message: '无权限修改' });
-    if (p.status === 'approved') return res.status(400).json({ code: 400, message: '已通过的项目不可再编辑' });
 
     const body = req.body || {};
+    const isContentEdit = body.contentEdit === true || body.contentEdit === 1 || body.contentEdit === '1';
+
+    if (p.status === 'approved') {
+      if (!isContentEdit) {
+        return res.status(400).json({ code: 400, message: '已发布项目请使用内容改稿' });
+      }
+      const check = canContentEdit(userId);
+      if (!check.ok) {
+        return res.status(403).json({ code: 403, message: check.message });
+      }
+    } else if (p.status !== 'rejected') {
+      return res.status(400).json({ code: 400, message: '当前状态不可编辑' });
+    }
+
+    const publishBlock = getPublishBlockMessage(userId);
+    if (publishBlock) {
+      return res.status(403).json({ code: 403, message: publishBlock });
+    }
+
     const title = String(body.title || p.title).trim();
     const carouselImages = body.carouselImages != null
       ? (Array.isArray(body.carouselImages) ? JSON.stringify(body.carouselImages) : String(body.carouselImages))
       : p.carousel_images;
 
+    if (p.status === 'approved' && isContentEdit) {
+      const consumed = consumeContentEdit(userId, id, 'membership_grant');
+      if (!consumed.ok) {
+        return res.status(403).json({ code: 403, message: consumed.message });
+      }
+    }
+
     db.prepare(`
-      UPDATE projects SET title = ?, ip_address = ?, store_count = ?, base_amount = ?, max_amount = ?, category_id = ?, category_tag = ?, cover_type = ?, carousel_images = ?, video_url = ?, video_poster = ?, detail_content = ?, introduction = ?, status = 'pending', updated_at = datetime('now', 'localtime')
+      UPDATE projects SET title = ?, ip_address = ?, store_count = ?, base_amount = ?, max_amount = ?, category_id = ?, category_tag = ?, cover_type = ?, carousel_images = ?, video_url = ?, video_poster = ?, detail_content = ?, introduction = ?, status = 'pending', reject_reason = '', updated_at = datetime('now', 'localtime')
       WHERE id = ?
     `).run(
       title,
@@ -292,14 +426,59 @@ router.put('/:id', (req, res) => {
       id
     );
     const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
-    res.json({ code: 0, data: projectToDetailRow(row), message: '已提交修改，等待审核' });
+    res.json({
+      code: 0,
+      data: projectToDetailRow(row, userId),
+      message: isContentEdit ? '改稿已提交，等待审核' : '已提交修改，等待审核'
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ code: 500, message: '更新失败' });
   }
 });
 
-/** 审核（需管理员，见 admin 路由） */
-/** 删除（仅管理员，见 admin 路由） */
+router.get('/:id/display', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const info = getProjectDisplayInfo(id, req.userId || null);
+    if (!info) return res.status(404).json({ code: 404, message: '项目不存在' });
+    res.json({ code: 0, data: info, message: 'ok' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '获取展示期失败' });
+  }
+});
+
+router.post('/:id/extend-display', (req, res) => {
+  try {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ code: 401, message: '未登录' });
+    const id = parseInt(req.params.id, 10);
+    const couponId = parseInt(req.body && req.body.couponId, 10);
+    if (!couponId) return res.status(400).json({ code: 400, message: '请选择延长券' });
+    const result = applyExtendDisplayCoupon(userId, id, couponId);
+    if (!result.ok) return res.status(422).json({ code: 422, message: result.message });
+    res.json({ code: 0, data: result, message: '展示期已延长' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '操作失败' });
+  }
+});
+
+router.post('/:id/pin', (req, res) => {
+  try {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ code: 401, message: '未登录' });
+    const id = parseInt(req.params.id, 10);
+    const couponId = parseInt(req.body && req.body.couponId, 10);
+    if (!couponId) return res.status(422).json({ code: 422, message: '请选择置顶卡' });
+    const result = applyPinCoupon(userId, id, couponId);
+    if (!result.ok) return res.status(422).json({ code: 422, message: result.message });
+    res.json({ code: 0, data: result, message: '置顶已生效' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '操作失败' });
+  }
+});
 
 module.exports = router;

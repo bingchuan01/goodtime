@@ -1,44 +1,94 @@
 <!--index.wxml-->
 <view class="page-content">
-  <!-- 固定区域：导航栏 + LOGO（在红线上一行，不被摄像头遮挡）+ 分隔线 -->
   <view class="fixed-header">
     <navigation-bar title="" back="{{false}}" color="#f5f5f5" background="transparent"></navigation-bar>
-    <header-logo logo-url="/images/hsjlogo.png"></header-logo>
-  </view>
-  <scroll-view class="scrollarea" scroll-y="true" refresher-enabled="{{true}}" refresher-triggered="{{refreshing}}" bindrefresherrefresh="onRefresh" bindscrolltolower="onLoadMore">
-  <!-- 数据看板 -->
-  <data-dashboard data-list="{{dashboardData}}"></data-dashboard>
-  
-  <!-- 搜索栏 -->
-  <search-bar placeholder="种草品牌从此刻开始" bind:search="onSearch"></search-bar>
-  
-  <!-- 分类导航 -->
-  <category-nav category-list="{{categoryList}}" current-category-id="{{currentCategoryId}}" bind:change="onCategoryChange"></category-nav>
-  
-  <!-- 项目列表（瀑布流） -->
-  <view class="project-list">
-    <view class="project-column" wx:for="{{projectColumns}}" wx:key="index" wx:for-index="colIndex" wx:for-item="column">
-      <project-card wx:for="{{column}}" wx:for-item="project" wx:for-index="projIndex" wx:key="id" project="{{project}}" bind:tap="onProjectTap"></project-card>
+    <view class="header-brand-row">
+      <header-logo logo-url="/images/hsjlogo.png" variant="home"></header-logo>
     </view>
   </view>
+  <scroll-view class="scrollarea" scroll-y="true" refresher-enabled="{{true}}" refresher-triggered="{{refreshing}}" bindrefresherrefresh="onRefresh" bindscrolltolower="onLoadMore">
+    <!-- 展区：轮播（底层）+ 数据看板（上层，可上滑收起） -->
+    <view class="hero-zone">
+      <swiper
+        class="home-carousel"
+        wx:if="{{carouselList.length > 0}}"
+        indicator-dots="{{true}}"
+        indicator-color="rgba(255,255,255,0.45)"
+        indicator-active-color="#ffffff"
+        autoplay="{{true}}"
+        circular="{{true}}"
+        interval="{{4000}}"
+        duration="{{500}}"
+      >
+        <swiper-item wx:for="{{carouselList}}" wx:key="id" data-index="{{index}}" bindtap="onHomeCarouselTap">
+          <image class="home-carousel-img" src="{{item.cover}}" mode="aspectFill" />
+        </swiper-item>
+      </swiper>
+      <view class="home-carousel-empty" wx:else>
+        <text class="home-carousel-empty-text">轮播图由后台配置（最多 6 张）</text>
+      </view>
 
-  <!-- 项目列表加载失败：空状态 + 重试 -->
-  <view class="project-empty project-empty-error" wx:if="{{!loading && loadError}}">
-    <text class="empty-desc">加载失败，请检查网络</text>
-    <text class="empty-hint">真机调试请将 api.js 中 BASE_URL 改为电脑局域网 IP（如 192.168.x.x:3000/api）</text>
-    <button class="empty-retry" bindtap="onRetryProjects">重试</button>
-  </view>
-  <!-- 暂无项目 -->
-  <view class="project-empty" wx:if="{{!loading && !loadError && projectList.length === 0}}">
-    <text class="empty-desc">暂无项目</text>
-  </view>
-  
-  <!-- 加载状态 -->
-  <view class="loading-more" wx:if="{{loading}}">
-    <text>加载中...</text>
-  </view>
-  <view class="no-more" wx:if="{{!hasMore && projectList.length > 0}}">
-    <text>没有更多了</text>
-  </view>
+      <view class="dashboard-layer {{dashboardCollapsed ? 'is-collapsed' : ''}} {{dashboardNoTransition ? 'no-transition' : ''}}">
+        <data-dashboard data-list="{{dashboardData}}"></data-dashboard>
+      </view>
+
+      <view class="dashboard-expand-hint" wx:if="{{dashboardCollapsed}}" catchtap="onExpandDashboard">
+        <image class="dashboard-expand-icon" src="/images/icons/chevron-down-muted.svg" mode="aspectFit" />
+      </view>
+    </view>
+
+    <search-bar placeholder="种草品牌从此刻开始" bind:search="onSearch" bind:locationchange="onLocationChange"></search-bar>
+
+    <view class="home-category-wrap">
+      <category-nav
+        class="home-category-nav"
+        category-list="{{categoryList}}"
+        current-category-id="{{currentCategoryId}}"
+        bind:change="onCategoryChange"
+      ></category-nav>
+      <view class="home-all-entry" bindtap="onAllProjectsTap">
+        <view class="home-all-entry-icon-wrap">
+          <image class="home-all-entry-icon" src="/images/icons/benefits/more.svg" mode="aspectFit"></image>
+        </view>
+        <text class="home-all-entry-label">全部项目</text>
+        <text class="home-all-entry-hint">二级分类</text>
+      </view>
+    </view>
+
+    <view class="surge-section" wx:if="{{surgeFeaturedList.length > 0}}">
+      <view class="surge-header">
+        <text class="surge-title">热度飙升</text>
+        <text class="surge-more" bindtap="onSurgeMore">Top50强</text>
+      </view>
+      <scroll-view class="surge-scroll" scroll-x enable-flex>
+        <view class="surge-track">
+          <view class="surge-card-wrap" wx:for="{{surgeFeaturedList}}" wx:key="id">
+            <project-card project="{{item}}" bind:tap="onProjectTap"></project-card>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="project-list">
+      <view class="project-column" wx:for="{{projectColumns}}" wx:key="index" wx:for-index="colIndex" wx:for-item="column">
+        <project-card wx:for="{{column}}" wx:for-item="project" wx:for-index="projIndex" wx:key="id" project="{{project}}" bind:tap="onProjectTap"></project-card>
+      </view>
+    </view>
+
+    <view class="project-empty project-empty-error" wx:if="{{!loading && loadError}}">
+      <text class="empty-desc">加载失败，请检查网络</text>
+      <text class="empty-hint">真机调试请将 api.js 中 BASE_URL 改为电脑局域网 IP（如 192.168.x.x:3000/api）</text>
+      <button class="empty-retry" bindtap="onRetryProjects">重试</button>
+    </view>
+    <view class="project-empty" wx:if="{{!loading && !loadError && projectList.length === 0}}">
+      <text class="empty-desc">暂无项目</text>
+    </view>
+
+    <view class="loading-more" wx:if="{{loading}}">
+      <text>加载中...</text>
+    </view>
+    <view class="no-more" wx:if="{{!hasMore && projectList.length > 0}}">
+      <text>没有更多了</text>
+    </view>
   </scroll-view>
 </view>

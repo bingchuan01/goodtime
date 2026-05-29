@@ -66,17 +66,6 @@
   border-radius: 4rpx;
 }
 
-.official-badge {
-  position: absolute;
-  top: 10rpx;
-  left: 10rpx;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  font-size: 20rpx;
-  padding: 6rpx 12rpx;
-  border-radius: 4rpx;
-}
-
 .card-content {
   padding: 20rpx;
 }
@@ -114,14 +103,45 @@
 }
 
 .store-count {
-  color: #666;
+  color: #999;
+  font-size: 24rpx;
+}
+
+.algo-tag-row {
+  margin-bottom: 12rpx;
+}
+
+.algo-tag {
+  display: inline-block;
   font-size: 22rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 4rpx;
+}
+
+.algo-surge {
+  background: #fff3ee;
+  color: #FF6B35;
+  border: 1px solid #FF6B35;
+}
+
+.algo-metric {
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #e8e8e8;
 }
 
 .tag-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
   margin-bottom: 12rpx;
+}
+
+.golden-shield-icon {
+  width: 36rpx;
+  height: 36rpx;
+  flex-shrink: 0;
 }
 
 .member-badge {
@@ -140,6 +160,10 @@
   background-color: #FFD700;
 }
 
+.member-trial {
+  background-color: #e67e22;
+}
+
 .member-tag {
   width: 40rpx;
   height: 40rpx;
@@ -154,8 +178,9 @@
 }
 
 .view-count {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: #999;
+  margin-left: auto;
 }
 
 .investment-tag {

@@ -1,6 +1,5 @@
 <!--project-card.wxml-->
 <view class="project-card" bindtap="onCardTap">
-  <!-- 封面区域：无封面或加载失败时显示占位图，真机只支持 https -->
   <view class="cover-wrapper">
     <image wx:if="{{project.coverType === 'image' || project.coverType === 'carousel'}}" 
            class="cover-image" 
@@ -9,38 +8,39 @@
            binderror="onCoverError"></image>
     <view wx:if="{{project.coverType === 'video'}}" class="video-cover">
       <image class="cover-image" src="{{displayCoverUrl}}" mode="aspectFill" binderror="onCoverError"></image>
-      <!-- V6会员不支持视频，不显示播放图标和时长 -->
       <view wx:if="{{project.memberLevel !== 'V6'}}" class="play-icon"><view class="play-triangle"></view></view>
       <view wx:if="{{project.memberLevel !== 'V6'}}" class="duration">{{project.videoDuration}}</view>
     </view>
-    <!-- 金盾认证徽章：只有V8会员支持金盾认证 -->
-    <view wx:if="{{project.isOfficial && project.memberLevel === 'V8'}}" class="official-badge">金盾认证</view>
   </view>
   
-  <!-- 内容信息 -->
   <view class="card-content">
-    <!-- 标题 -->
     <view class="title">{{project.title}}</view>
     
-    <!-- 信息行1：IP + 分类标签 + 门店数 -->
     <view class="info-row">
       <text class="ip">{{project.ip}}</text>
       <text class="category-tag">{{project.category}}</text>
-      <text class="store-count">门店{{project.storeCount}}</text>
+      <text class="view-count">{{viewLabel}}</text>
     </view>
     
-    <!-- 信息行2：会员标签或平台认证标签 -->
     <view class="tag-row">
-      <view wx:if="{{project.memberLevel}}" class="member-badge member-{{project.memberLevel}}">
+      <view wx:if="{{project.memberLevel}}" class="member-badge member-{{memberBadgeClass}}">
         {{project.memberLevel}}
       </view>
-      <!-- 闪电图标：V6会员专属图标，表示闪电发布，所有V6会员项目都显示 -->
+      <image
+        wx:if="{{project.isOfficial && project.memberLevel === 'V8'}}"
+        class="golden-shield-icon"
+        src="/images/icons/golden-shield.svg"
+        mode="aspectFit"
+      />
       <image wx:if="{{project.memberLevel === 'V6'}}" class="member-tag" src="/images/icons/lightning.svg" mode="aspectFit"></image>
     </view>
+
+    <view class="algo-tag-row" wx:if="{{algoTag}}">
+      <text class="algo-tag {{algoTagClass}}">{{algoTag.label}}</text>
+    </view>
     
-    <!-- 底部信息：播放量 + 投资额 -->
     <view class="footer-info">
-      <text class="view-count">播放量{{project.viewCount}}</text>
+      <text class="store-count">门店{{project.storeCount}}</text>
       <view class="investment-tag">投资额 {{project.investmentAmount}}</view>
     </view>
   </view>

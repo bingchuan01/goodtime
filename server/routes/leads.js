@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../db');
+const { recordConsult } = require('../lib/project-stats');
 
 /** 提交线索（免费获取品牌资料） */
 router.post('/', (req, res) => {
@@ -18,6 +19,11 @@ router.post('/', (req, res) => {
       p,
       String(address || '').trim()
     );
+    db.prepare('UPDATE projects SET clue_count = clue_count + 1 WHERE id = ?').run(pid);
+
+    const userId = req.userId || `lead_${p}`;
+    recordConsult(pid, userId);
+
     res.status(201).json({ code: 0, data: null, message: '提交成功' });
   } catch (e) {
     console.error(e);
