@@ -14,13 +14,22 @@ page {
 
 /* ========== 用户信息卡片 ========== */
 .user-card {
-  display: flex;
-  align-items: center;
   margin: 0 30rpx 24rpx;
   padding: 32rpx;
   background: #fff;
   border-radius: 20rpx;
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+}
+
+.user-card-main {
+  display: flex;
+  align-items: flex-start;
+}
+
+.user-card-action {
+  margin-top: 24rpx;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .avatar-wrap {
@@ -45,6 +54,10 @@ page {
 
 .user-meta {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
 }
 
 .nickname {
@@ -54,20 +67,44 @@ page {
   margin-bottom: 8rpx;
 }
 
+.member-level-tag {
+  display: inline-block;
+  align-self: flex-start;
+  margin-bottom: 10rpx;
+  padding: 4rpx 16rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #FB7299;
+  background: rgba(251, 114, 153, 0.12);
+  border-radius: 999rpx;
+  border: 1rpx solid rgba(251, 114, 153, 0.35);
+}
+
+.member-level-trial {
+  color: #e67e22;
+  background: rgba(230, 126, 34, 0.12);
+  border-color: rgba(230, 126, 34, 0.35);
+}
+
 .member-status {
   font-size: 24rpx;
   color: #999;
 }
 
+.member-status-expired {
+  color: #FB7299;
+}
+
 .btn-open {
-  padding: 0 36rpx;
-  height: 64rpx;
-  line-height: 64rpx;
-  font-size: 28rpx;
+  padding: 0 32rpx;
+  min-width: 160rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  font-size: 26rpx;
   font-weight: bold;
   color: #fff;
-  background: #e74c3c;
-  border-radius: 32rpx;
+  background: #FB7299;
+  border-radius: 30rpx;
   border: none;
 }
 
@@ -114,26 +151,51 @@ page {
   text-align: center;
 }
 
-.benefit-icon {
-  width: 64rpx;
-  height: 64rpx;
-  line-height: 64rpx;
-  font-size: 36rpx;
+.benefit-icon-wrap {
+  width: 72rpx;
+  height: 72rpx;
   margin-bottom: 12rpx;
-  color: #ccc;
   border-radius: 50%;
-  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
-.benefit-icon.enabled {
-  color: #e74c3c;
-  background: rgba(231, 76, 60, 0.1);
+.benefit-icon-img {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+/* 已开通：高纯度、高光感 */
+.benefit-icon-wrap.enabled {
+  background: rgba(251, 114, 153, 0.2);
+  border: 1rpx solid rgba(251, 114, 153, 0.45);
+  box-shadow: 0 4rpx 16rpx rgba(251, 114, 153, 0.28);
+}
+
+.benefit-icon-wrap.enabled .benefit-icon-img {
+  opacity: 1;
+}
+
+/* 筹备中：同色系、降纯柔光（不用 dashed border，避免圆角下渲染成方框） */
+.benefit-icon-wrap.pending {
+  background: rgba(251, 114, 153, 0.07);
+}
+
+.benefit-icon-wrap.pending .benefit-icon-img {
+  opacity: 0.42;
 }
 
 .benefit-name {
   font-size: 22rpx;
-  color: #666;
+  color: #999;
   line-height: 1.3;
+}
+
+.benefit-name.enabled {
+  color: #333;
+  font-weight: 600;
 }
 
 /* ========== 成为他们：横向滑动封面，真机可见并排与滑动 ========== */
@@ -240,7 +302,7 @@ page {
 .dot.active {
   width: 24rpx;
   border-radius: 6rpx;
-  background: rgba(102, 126, 234, 0.9);
+  background: rgba(251, 114, 153, 0.9);
 }
 
 /* ========== 底部占位：留足空间，避免成为他们被吸底按钮挡住 ========== */
@@ -273,7 +335,7 @@ page {
   font-size: 32rpx;
   font-weight: bold;
   color: #fff;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FB7299 0%, #FF9BB5 100%);
   border-radius: 44rpx;
   border: none;
 }

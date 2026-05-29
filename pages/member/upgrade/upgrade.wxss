@@ -98,6 +98,12 @@ page {
   margin-bottom: 12rpx;
 }
 
+.plan-price-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .plan-price {
   font-size: 40rpx;
   font-weight: bold;
@@ -108,6 +114,148 @@ page {
   font-size: 24rpx;
   font-weight: normal;
   color: #666;
+}
+
+.plan-original {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #999;
+  text-decoration: line-through;
+}
+
+/* ========== 优惠体验卡 ========== */
+.card-trial-wrap {
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+
+.trial-card {
+  position: relative;
+  border-radius: 20rpx;
+  overflow: hidden;
+  border: 3rpx solid #f5c6cb;
+  background: #fff5f7;
+}
+
+.trial-card.selected {
+  border-color: #FB7299;
+  box-shadow: 0 8rpx 28rpx rgba(251, 114, 153, 0.35);
+}
+
+.trial-card-bg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.35;
+}
+
+.trial-card-bg-default {
+  background: linear-gradient(135deg, #ffeef2 0%, #fff0f8 50%, #f3e8ff 100%);
+  opacity: 1;
+}
+
+.trial-corner-badge {
+  position: absolute;
+  top: 16rpx;
+  right: 16rpx;
+  z-index: 2;
+  padding: 6rpx 20rpx;
+  font-size: 22rpx;
+  color: #fff;
+  background: linear-gradient(135deg, #ff6b9d, #FB7299);
+  border-radius: 999rpx;
+}
+
+.trial-card-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 24rpx 20rpx;
+  min-height: 180rpx;
+}
+
+.trial-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.trial-name {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 6rpx;
+}
+
+.trial-subtitle {
+  font-size: 22rpx;
+  color: #888;
+  margin-bottom: 12rpx;
+}
+
+.trial-price-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.trial-price {
+  font-size: 52rpx;
+  font-weight: bold;
+  color: #FB7299;
+  line-height: 1.1;
+}
+
+.trial-saved {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #FB7299;
+}
+
+.trial-days {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #999;
+}
+
+.trial-illus {
+  width: 200rpx;
+  height: 160rpx;
+  flex-shrink: 0;
+  margin-left: 12rpx;
+}
+
+.trial-countdown-bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 14rpx 24rpx;
+  background: linear-gradient(90deg, #ff9bb5, #FB7299);
+}
+
+.trial-countdown-icon {
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.trial-countdown-label {
+  font-size: 24rpx;
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 1rpx;
 }
 
 /* ========== 选择支付方式 ========== */

@@ -17,12 +17,12 @@
 
     <!-- 正常内容（非加载失败时显示，有数据才渲染避免底部内容闪现） -->
     <block wx:if="{{!loadError}}">
-    <!-- 加载中占位（无数据或页面未就绪时显示） -->
-    <view wx:if="{{!project || !showContent}}" class="loading-placeholder">
+    <!-- 加载中占位（仅无数据且非失败时显示） -->
+    <view wx:if="{{!project && !loadError}}" class="loading-placeholder">
       <text>加载中...</text>
     </view>
-    <!-- 顶部区域：轮播图或视频（有 project 且页面就绪才显示，避免过渡动画期间闪现） -->
-    <view wx:if="{{project && showContent}}" class="top-media-section">
+    <!-- 顶部区域：轮播图或视频 -->
+    <view wx:if="{{project}}" class="top-media-section">
       <!-- V6会员或V8会员选择轮播图时 -->
       <view wx:if="{{project && project.displayType === 'carousel'}}" class="carousel-wrapper">
         <swiper 
@@ -68,7 +68,7 @@
     </view>
 
     <!-- 详情模块 -->
-    <view wx:if="{{project && showContent}}" class="detail-section">
+    <view wx:if="{{project}}" class="detail-section">
       <!-- 详情标题和私信按钮 -->
       <view class="detail-header">
         <text class="detail-title">详情</text>
@@ -84,11 +84,15 @@
           <view class="publisher-name-row">
             <text class="publisher-name">{{project.publisher.nickname}}</text>
             <!-- 会员标签 -->
-            <view wx:if="{{project.publisher.memberLevel}}" class="member-badge member-{{project.publisher.memberLevel}}">
+            <view wx:if="{{project.publisher.memberLevel}}" class="member-badge member-{{project.publisherMemberBadgeClass}}">
               {{project.publisher.memberLevel}}
             </view>
-            <!-- 金盾认证标签：只有V8会员支持金盾认证 -->
-            <view wx:if="{{project.isOfficial && project.memberLevel === 'V8'}}" class="official-badge">金盾认证</view>
+            <image
+              wx:if="{{project.isOfficial && project.memberLevel === 'V8'}}"
+              class="golden-shield-icon"
+              src="/images/icons/golden-shield.svg"
+              mode="aspectFit"
+            />
           </view>
           <view class="publisher-meta">
             <text class="publisher-ip">{{project.publisher.ip}}</text>
@@ -131,7 +135,7 @@
     </view>
 
     <!-- 详情页长页面区域 -->
-    <view wx:if="{{project && showContent}}" class="detail-content-section">
+    <view wx:if="{{project}}" class="detail-content-section">
       <view class="detail-content-wrapper">
         <!-- 详情内容 -->
         <view class="detail-content">
@@ -153,7 +157,7 @@
     </view>
 
     <!-- 底部免费获取品牌资料按钮 -->
-    <view wx:if="{{project && showContent}}" class="bottom-action-section">
+    <view wx:if="{{project}}" class="bottom-action-section">
       <view class="get-material-btn" bindtap="onShowForm">
         <text>免费获取品牌资料</text>
       </view>

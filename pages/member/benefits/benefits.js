@@ -1,25 +1,26 @@
 // 会员权益页（会员中心）
 const auth = require('../../../utils/auth');
 const api = require('../../../utils/api');
+const member = require('../../../utils/member');
 
-// 16 项权益，红色翅膀=可享。V6 默认开通：矩阵全域推、SEO引流
+// 16 项权益，#FB7299 图标；高纯高光=已开通。V6 默认开通：矩阵全域推、SEO引流
 const BENEFITS_LIST = [
-  { id: 1, name: '积分加速', icon: '翼', enabled: false },
-  { id: 2, name: '赠送S币', icon: '翼', enabled: false },
-  { id: 3, name: '金盾认证', icon: '翼', enabled: false },
-  { id: 4, name: 'API接口', icon: '翼', enabled: false },
-  { id: 5, name: '私域搭建', icon: '翼', enabled: false },
-  { id: 6, name: '用户培训支持', icon: '翼', enabled: false },
-  { id: 7, name: '品牌全案设计', icon: '翼', enabled: false },
-  { id: 8, name: '品牌代运营', icon: '翼', enabled: false },
-  { id: 9, name: '专栏置顶', icon: '翼', enabled: false },
-  { id: 10, name: '直播助力', icon: '翼', enabled: false },
-  { id: 11, name: 'VCR视频宣发', icon: '翼', enabled: false },
-  { id: 12, name: '矩阵全域推', icon: '翼', enabled: true },
-  { id: 13, name: '算法引流', icon: '翼', enabled: false },
-  { id: 14, name: 'SEO引流', icon: '翼', enabled: true },
-  { id: 15, name: '沙龙专场会', icon: '翼', enabled: false },
-  { id: 16, name: '更多权益', icon: '翼', enabled: false }
+  { id: 1, name: '积分加速', iconPath: '/images/icons/benefits/points-boost.svg', enabled: false },
+  { id: 2, name: '赠送S币', iconPath: '/images/icons/benefits/s-coin.svg', enabled: false },
+  { id: 3, name: '金盾认证', iconPath: '/images/icons/benefits/shield.svg', enabled: false },
+  { id: 4, name: 'API接口', iconPath: '/images/icons/benefits/api.svg', enabled: false },
+  { id: 5, name: '私域搭建', iconPath: '/images/icons/benefits/private-domain.svg', enabled: false },
+  { id: 6, name: '用户培训支持', iconPath: '/images/icons/benefits/training.svg', enabled: false },
+  { id: 7, name: '品牌全案设计', iconPath: '/images/icons/benefits/brand-design.svg', enabled: false },
+  { id: 8, name: '品牌代运营', iconPath: '/images/icons/benefits/agency.svg', enabled: false },
+  { id: 9, name: '专栏置顶', iconPath: '/images/icons/benefits/column-top.svg', enabled: false },
+  { id: 10, name: '直播助力', iconPath: '/images/icons/benefits/live.svg', enabled: false },
+  { id: 11, name: 'VCR视频宣发', iconPath: '/images/icons/benefits/vcr.svg', enabled: false },
+  { id: 12, name: '矩阵全域推', iconPath: '/images/icons/benefits/matrix-push.svg', enabled: true },
+  { id: 13, name: '算法引流', iconPath: '/images/icons/benefits/algo-traffic.svg', enabled: false },
+  { id: 14, name: 'SEO引流', iconPath: '/images/icons/benefits/seo.svg', enabled: true },
+  { id: 15, name: '沙龙专场会', iconPath: '/images/icons/benefits/salon.svg', enabled: false },
+  { id: 16, name: '更多权益', iconPath: '/images/icons/benefits/more.svg', enabled: false }
 ];
 
 // 层叠轮播 8 张
@@ -36,9 +37,13 @@ const CAROUSEL_COLORS = [
 
 Page({
   data: {
-    userInfo: {}, // 初始为空对象，避免首帧访问 userInfo.xxx 报错导致页面不渲染
+    userInfo: {},
+    isLoggedIn: false,
     isMember: false,
+    isTrial: false,
     memberExpireText: '', // 会员有效期展示文案，如 2025-12-31 或 永久
+    memberLevelLabel: '',
+    memberExpired: false,
     benefitsList: BENEFITS_LIST,
     carouselList: [],
     carouselIndex: 0,
@@ -47,40 +52,77 @@ Page({
     showFooterBar: false
   },
 
-  onLoad() {
+  async onLoad() {
+    try {
+      await auth.refreshUserInfo();
+    } catch (e) {
+      /* ignore */
+    }
+    await this._maybeReconcileMember();
     this._syncUserAndMember();
     this._loadCarouselData();
   },
 
-  onShow() {
+  async onShow() {
+    try {
+      await auth.refreshUserInfo();
+    } catch (e) {
+      /* ignore */
+    }
+    await this._maybeReconcileMember();
     this._syncUserAndMember();
   },
 
-  // 同步用户信息与会员有效期展示（V6/V8 字符串或数字等级均视为已开通）
+  async _maybeReconcileMember() {
+    if (!auth.checkLogin()) return;
+    const u = auth.getUserInfo() || {};
+    if (member.isActivePaidMember(u)) return;
+    try {
+      await api.reconcileMemberOrder();
+      await auth.refreshUserInfo();
+    } catch (e) {
+      /* ignore */
+    }
+  },
+
   _syncUserAndMember() {
-    const userInfo = auth.getUserInfo() || {};
-    const level = userInfo.member_level || userInfo.memberLevel || 0;
-    const isMember = level === 'V6' || level === 'V8' || (typeof level === 'number' && level > 0);
+    const isLoggedIn = auth.checkLogin();
+    const userInfo = isLoggedIn ? auth.getUserInfo() || {} : {};
+    const level = member.getMemberLevel(userInfo);
+    const isMember = member.isActivePaidMember(userInfo);
+    const isTrial = member.isActiveTrialMember(userInfo);
+    const memberExpired =
+      !isMember && !isTrial && member.isExpireTimePast(userInfo) &&
+      (member.isPaidMemberLevel(level) || member.isTrialMemberLevel(level));
     let memberExpireText = '';
-    let expireTime = null;
-    if (isMember && userInfo.member_expire_time) {
-      const t = new Date(userInfo.member_expire_time);
-      if (!isNaN(t.getTime())) {
-        memberExpireText = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
-        expireTime = t;
+    let expireTime = member.parseExpireTime(userInfo);
+    if (isMember || isTrial) {
+      if (expireTime) {
+        memberExpireText = member.formatExpireDate(userInfo);
       } else {
         memberExpireText = '永久';
       }
+    } else if (memberExpired && expireTime) {
+      memberExpireText = member.formatExpireDate(userInfo);
+    }
+    let memberLevelLabel = '';
+    if (isTrial) {
+      memberLevelLabel = '体验者';
     } else if (isMember) {
-      memberExpireText = '永久';
+      if (level === 'V6') memberLevelLabel = 'V6会员';
+      else if (level === 'V8') memberLevelLabel = 'V8会员';
+      else memberLevelLabel = '付费会员';
     }
     this.setData({
+      isLoggedIn,
       userInfo,
       isMember,
-      memberExpireText
+      isTrial,
+      memberExpired,
+      memberExpireText,
+      memberLevelLabel
     });
-    // 会员有效期结束预警：剩余 30 天内弹窗提示（每次进入本页至多提示一次）
-    if (isMember && expireTime && !this._expireWarningShown) {
+    if ((isMember || isTrial || memberExpired) && expireTime && !this._expireWarningShown) {
       const now = new Date();
       const msLeft = expireTime.getTime() - now.getTime();
       const daysLeft = Math.ceil(msLeft / (24 * 60 * 60 * 1000));
@@ -114,10 +156,11 @@ Page({
     }
   },
 
-  // 跳转支付页（会员升级/支付方式页）
   goUpgrade() {
-    wx.navigateTo({
-      url: '/pages/member/upgrade/upgrade'
+    auth.requireLogin(() => {
+      wx.navigateTo({
+        url: '/pages/member/upgrade/upgrade'
+      });
     });
   },
 

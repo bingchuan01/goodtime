@@ -168,6 +168,8 @@
 .publisher-name-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
   margin-bottom: 12rpx;
 }
 
@@ -197,14 +199,15 @@
   color: #333;
 }
 
-/* 金盾认证标签 */
-.official-badge {
-  padding: 4rpx 12rpx;
-  border-radius: 4rpx;
-  font-size: 22rpx;
-  background-color: #FFD700;
-  color: #333;
-  font-weight: bold;
+.member-trial {
+  background-color: #e67e22;
+}
+
+.golden-shield-icon {
+  width: 36rpx;
+  height: 36rpx;
+  flex-shrink: 0;
+  margin-right: 8rpx;
 }
 
 .publisher-meta {

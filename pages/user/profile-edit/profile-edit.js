@@ -23,7 +23,7 @@ Page({
       this.setData({
         userInfo,
         nickname: userInfo.nickname || '',
-        avatarUrl: userInfo.avatar_url || ''
+        avatarUrl: userInfo.avatarUrl || userInfo.avatar_url || ''
       });
     }
   },
@@ -36,13 +36,27 @@ Page({
       success: async (res) => {
         try {
           wx.showLoading({ title: '上传中...' });
-          const uploadInfo = await api.get('/upload/image/token');
-          // TODO: 上传到 COS 后设置 avatarUrl
-          // const avatarUrl = await uploadToCOS(uploadInfo, res.tempFilePaths[0]);
-          // this.setData({ avatarUrl });
+          const filePath = res && res.tempFilePaths && res.tempFilePaths[0];
+          if (!filePath) {
+            wx.hideLoading();
+            wx.showToast({ title: '未选择图片', icon: 'none' });
+            return;
+          }
+
+          const uploadRes = await api.uploadFileOrOss(filePath, '.jpg');
+          const avatarUrl = (uploadRes && uploadRes.url) || (uploadRes && uploadRes.data && uploadRes.data.url) || '';
+          if (!avatarUrl) {
+            throw new Error('头像上传失败');
+          }
+          this.setData({ avatarUrl });
           wx.hideLoading();
+          wx.showToast({ title: '头像已更新', icon: 'success' });
         } catch (error) {
           wx.hideLoading();
+          wx.showToast({
+            title: (error && error.message) || '头像上传失败',
+            icon: 'none'
+          });
         }
       }
     });

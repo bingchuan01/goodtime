@@ -41,14 +41,15 @@
   background-color: #FFF5F0;
 }
 
+/* 图标比圆底小 0.2 倍（×0.8），避免贴边像凸出圆外 */
 .icon {
-  width: 80rpx;
-  height: 80rpx;
+  width: 64rpx;
+  height: 64rpx;
 }
 
 .icon-fallback {
-  font-size: 48rpx;
-  line-height: 48rpx;
+  font-size: 38rpx;
+  line-height: 38rpx;
 }
 
 .label {

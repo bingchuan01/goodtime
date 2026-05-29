@@ -1,6 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { db, ensureUser } = require('../db');
+const { getPublishBlockMessage } = require('../lib/member-active');
+const { canContentEdit, consumeContentEdit } = require('../lib/growth/content-edit-pool');
+const {
+  applyExtendDisplayCoupon,
+  applyPinCoupon,
+  getProjectDisplayInfo
+} = require('../lib/growth/coupon-use');
 
 function normalizeCoverUrl(url) {
   if (!url) return '';
@@ -152,7 +159,7 @@ router.get('/', (req, res) => {
       params.push(displayZone);
     }
 
-    sql += ' ORDER BY updated_at DESC LIMIT ? OFFSET ?';
+    sql += ` ORDER BY CASE WHEN pinned_until IS NOT NULL AND pinned_until != '' AND pinned_until > datetime('now', 'localtime') THEN 0 ELSE 1 END, updated_at DESC LIMIT ? OFFSET ?`;
     params.push(pageSize + 1, offset);
 
     const rows = db.prepare(sql).all(...params);
@@ -201,6 +208,10 @@ router.post('/', (req, res) => {
     if (!title) return res.status(400).json({ code: 400, message: '请填写标题' });
 
     ensureUser(userId);
+    const publishBlock = getPublishBlockMessage(userId);
+    if (publishBlock) {
+      return res.status(403).json({ code: 403, message: publishBlock });
+    }
     const user = db.prepare('SELECT member_level FROM users WHERE id = ?').get(userId);
     const memberLevel = (user && user.member_level) || body.memberLevel || 'V6';
     const coverType = body.coverType || 'carousel';
@@ -253,7 +264,7 @@ router.post('/', (req, res) => {
   }
 });
 
-/** 更新项目（仅作者，且状态为 rejected 时可编辑） */
+/** 更新项目（退回修改 或 已发布内容改稿） */
 router.put('/:id', (req, res) => {
   try {
     const userId = req.userId;
@@ -264,16 +275,41 @@ router.put('/:id', (req, res) => {
     const p = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
     if (!p) return res.status(404).json({ code: 404, message: '项目不存在' });
     if (p.user_id !== userId) return res.status(403).json({ code: 403, message: '无权限修改' });
-    if (p.status === 'approved') return res.status(400).json({ code: 400, message: '已通过的项目不可再编辑' });
 
     const body = req.body || {};
+    const isContentEdit = body.contentEdit === true || body.contentEdit === 1 || body.contentEdit === '1';
+
+    if (p.status === 'approved') {
+      if (!isContentEdit) {
+        return res.status(400).json({ code: 400, message: '已发布项目请使用内容改稿' });
+      }
+      const check = canContentEdit(userId);
+      if (!check.ok) {
+        return res.status(403).json({ code: 403, message: check.message });
+      }
+    } else if (p.status !== 'rejected') {
+      return res.status(400).json({ code: 400, message: '当前状态不可编辑' });
+    }
+
+    const publishBlock = getPublishBlockMessage(userId);
+    if (publishBlock) {
+      return res.status(403).json({ code: 403, message: publishBlock });
+    }
+
     const title = String(body.title || p.title).trim();
     const carouselImages = body.carouselImages != null
       ? (Array.isArray(body.carouselImages) ? JSON.stringify(body.carouselImages) : String(body.carouselImages))
       : p.carousel_images;
 
+    if (p.status === 'approved' && isContentEdit) {
+      const consumed = consumeContentEdit(userId, id, 'membership_grant');
+      if (!consumed.ok) {
+        return res.status(403).json({ code: 403, message: consumed.message });
+      }
+    }
+
     db.prepare(`
-      UPDATE projects SET title = ?, ip_address = ?, store_count = ?, base_amount = ?, max_amount = ?, category_id = ?, category_tag = ?, cover_type = ?, carousel_images = ?, video_url = ?, video_poster = ?, detail_content = ?, introduction = ?, status = 'pending', updated_at = datetime('now', 'localtime')
+      UPDATE projects SET title = ?, ip_address = ?, store_count = ?, base_amount = ?, max_amount = ?, category_id = ?, category_tag = ?, cover_type = ?, carousel_images = ?, video_url = ?, video_poster = ?, detail_content = ?, introduction = ?, status = 'pending', reject_reason = '', updated_at = datetime('now', 'localtime')
       WHERE id = ?
     `).run(
       title,
@@ -292,10 +328,61 @@ router.put('/:id', (req, res) => {
       id
     );
     const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
-    res.json({ code: 0, data: projectToDetailRow(row), message: '已提交修改，等待审核' });
+    res.json({
+      code: 0,
+      data: projectToDetailRow(row),
+      message: isContentEdit ? '改稿已提交，等待审核' : '已提交修改，等待审核'
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ code: 500, message: '更新失败' });
+  }
+});
+
+/** 项目展示期信息 */
+router.get('/:id/display', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const info = getProjectDisplayInfo(id, req.userId || null);
+    if (!info) return res.status(404).json({ code: 404, message: '项目不存在' });
+    res.json({ code: 0, data: info, message: 'ok' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '获取展示期失败' });
+  }
+});
+
+/** 使用展示期延长券 */
+router.post('/:id/extend-display', (req, res) => {
+  try {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ code: 401, message: '未登录' });
+    const id = parseInt(req.params.id, 10);
+    const couponId = parseInt(req.body && req.body.couponId, 10);
+    if (!couponId) return res.status(400).json({ code: 400, message: '请选择延长券' });
+    const result = applyExtendDisplayCoupon(userId, id, couponId);
+    if (!result.ok) return res.status(422).json({ code: 422, message: result.message });
+    res.json({ code: 0, data: result, message: '展示期已延长' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '操作失败' });
+  }
+});
+
+/** 使用置顶卡 */
+router.post('/:id/pin', (req, res) => {
+  try {
+    const userId = req.userId;
+    if (!userId) return res.status(401).json({ code: 401, message: '未登录' });
+    const id = parseInt(req.params.id, 10);
+    const couponId = parseInt(req.body && req.body.couponId, 10);
+    if (!couponId) return res.status(400).json({ code: 422, message: '请选择置顶卡' });
+    const result = applyPinCoupon(userId, id, couponId);
+    if (!result.ok) return res.status(422).json({ code: 422, message: result.message });
+    res.json({ code: 0, data: result, message: '置顶已生效' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '操作失败' });
   }
 });
 

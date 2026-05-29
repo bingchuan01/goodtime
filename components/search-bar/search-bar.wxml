@@ -1,9 +1,35 @@
 <!--search-bar.wxml-->
-<view class="search-bar" bindtap="onSearchTap">
-  <view class="search-input-wrapper">
-    <image wx:if="{{showIcon}}" class="search-icon" src="/images/icons/search.svg" mode="aspectFit" binderror="onIconError"></image>
-    <text class="icon-placeholder" wx:else>🔍</text>
-    <text class="placeholder">{{placeholder}}</text>
+<view class="search-bar-panel">
+  <view class="search-bar">
+    <view wx:if="{{showLocation}}" class="location-picker" bindtap="onOpenLocationSheet">
+      <view class="location-block">
+        <image class="location-icon" src="/images/icons/location-pin.svg" mode="aspectFit" />
+        <text class="location-text">{{locationLabel}}</text>
+        <image class="location-arrow" src="/images/icons/chevron-down-muted.svg" mode="aspectFit" />
+      </view>
+    </view>
+
+    <view class="search-main" bindtap="onSearchTap">
+      <view class="search-input-wrapper">
+        <image wx:if="{{showIcon}}" class="search-icon" src="/images/icons/search.svg" mode="aspectFit" binderror="onIconError"></image>
+        <text class="icon-placeholder" wx:else>🔍</text>
+        <text class="placeholder">{{placeholder}}</text>
+      </view>
+      <view class="search-btn">搜索</view>
+    </view>
   </view>
-  <view class="search-btn">搜索</view>
 </view>
+
+<!-- 挂到页面根节点，避免 scroll-view 内 fixed 失效 -->
+<root-portal wx:if="{{regionModalVisible}}">
+  <view class="loc-portal-wrap">
+    <view class="loc-mask" bindtap="onCloseRegionModal"></view>
+    <view class="loc-region-panel">
+      <view class="loc-region-title">选择城市</view>
+      <picker mode="region" level="city" bindchange="onRegionPick" bindcancel="onCloseRegionModal">
+        <view class="loc-region-btn">点击选择省 / 市</view>
+      </picker>
+      <view class="loc-region-cancel" bindtap="onCloseRegionModal">取消</view>
+    </view>
+  </view>
+</root-portal>

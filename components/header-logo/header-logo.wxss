@@ -37,3 +37,14 @@
   background-color: #e5e5e5;
   margin-top: 30rpx;
 }
+
+/* 首页顶栏：样式写在组件内才生效（页面 wxss 无法穿透自定义组件） */
+.header-logo--home {
+  padding: 0;
+  min-height: 0;
+}
+
+.header-logo--home .logo-image {
+  width: 294rpx;
+  height: 118rpx;
+}

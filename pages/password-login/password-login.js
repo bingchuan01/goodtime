@@ -17,7 +17,12 @@ Page({
     // 如果已登录，直接返回
     if (auth.checkLogin()) {
       wx.navigateBack();
+      return;
     }
+    wx.showToast({
+      title: '账号密码登录即将上线',
+      icon: 'none'
+    });
   },
 
   // 账号输入
@@ -36,37 +41,9 @@ Page({
 
   // 密码登录
   onPasswordLogin() {
-    const { account, password } = this.data;
-
-    // 验证账号格式（手机号或邮箱）
-    if (!account) {
-      wx.showToast({
-        title: '请输入账号',
-        icon: 'none'
-      });
-      return;
-    }
-
-    if (!this.validateAccount(account)) {
-      wx.showToast({
-        title: '请输入正确的手机号或邮箱',
-        icon: 'none'
-      });
-      return;
-    }
-
-    if (!password || password.length < 6) {
-      wx.showToast({
-        title: '密码至少6位',
-        icon: 'none'
-      });
-      return;
-    }
-
-    this.doLogin({
-      type: 'password',
-      account: account,
-      password: password
+    wx.showToast({
+      title: '账号密码登录即将上线',
+      icon: 'none'
     });
   },
 
@@ -82,24 +59,14 @@ Page({
       wx.hideLoading();
       wx.showToast({
         title: '登录成功',
-        icon: 'success'
+        icon: 'success',
+        duration: 1200
       });
-
-      // 返回上一页或跳转首页
-      setTimeout(() => {
-        const pages = getCurrentPages();
-        if (pages.length > 1) {
-          wx.navigateBack();
-        } else {
-          wx.switchTab({
-            url: '/pages/index/index'
-          });
-        }
-      }, 1500);
+      auth.goHomeAfterLogin(350);
     } catch (error) {
       wx.hideLoading();
       wx.showToast({
-        title: '登录失败',
+        title: (error && error.message) || '登录失败',
         icon: 'none'
       });
     } finally {
@@ -107,37 +74,9 @@ Page({
     }
   },
 
-  // 统一登录处理
-  doLogin(loginData) {
-    wx.showLoading({ title: '登录中...' });
-    
-    // TODO: 调用登录API
-    setTimeout(() => {
-      // 模拟登录成功
-      wx.setStorageSync('token', 'mock_token_' + Date.now());
-      wx.setStorageSync('userInfo', {
-        id: 'user_' + Date.now(),
-        account: loginData.account
-      });
-      
-      wx.hideLoading();
-      wx.showToast({
-        title: '登录成功',
-        icon: 'success'
-      });
-
-      // 返回上一页或跳转首页
-      setTimeout(() => {
-        const pages = getCurrentPages();
-        if (pages.length > 1) {
-          wx.navigateBack();
-        } else {
-          wx.switchTab({
-            url: '/pages/index/index'
-          });
-        }
-      }, 1500);
-    }, 1000);
+  // 统一登录处理（账号密码）
+  async doLogin(loginData) {
+    wx.showToast({ title: '账号密码登录即将上线', icon: 'none' });
   },
 
   // 协议勾选
@@ -148,14 +87,14 @@ Page({
     });
   },
 
-  // 跳转到协议页面
+  // 跳转到协议页面（与「我的-设置」文档页一致）
   goToAgreement(e) {
     const type = e.currentTarget.dataset.type;
-    // TODO: 跳转到协议页面
-    wx.showToast({
-      title: `查看${type === 'user' ? '用户协议' : '隐私协议'}`,
-      icon: 'none'
-    });
+    const url =
+      type === 'user'
+        ? '/pages/user/doc/doc?type=user-agreement'
+        : '/pages/user/doc/doc?type=privacy';
+    wx.navigateTo({ url });
   },
 
   // 跳转到手机号登录页面
@@ -165,8 +104,9 @@ Page({
 
   // 跳转到忘记密码页面
   goToForgotPassword() {
-    wx.navigateTo({
-      url: '/pages/forgot-password/forgot-password'
+    wx.showToast({
+      title: '该功能即将上线',
+      icon: 'none'
     });
   },
 

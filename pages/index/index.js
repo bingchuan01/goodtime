@@ -3,9 +3,11 @@ const api = require('../../utils/api');
 const categoriesUtil = require('../../utils/categories');
 const dashboardIconSvg = require('../../utils/dashboardIconSvg');
 
+const DASHBOARD_SHOW_MS = 1500;
+const DASHBOARD_ANIM_MS = 450;
+
 Page({
   data: {
-    // 数据看板（默认 + 后台可覆盖）
     dashboardData: [
       { key: 'marketSize', label: '市场规模', value: '8万亿', icon: '/images/icons/chart.svg', iconBgColor: '#E3F2FD' },
       { key: 'serviceMerchants', label: '服务商家', value: '3630', icon: '/images/icons/shop.svg', iconBgColor: '#FFF9C4' },
@@ -13,55 +15,318 @@ Page({
       { key: 'marketShare', label: '市场份额', value: '0.03', icon: '/images/icons/pie-chart.svg', iconBgColor: '#FCE4EC' },
       { key: 'registeredUsers', label: '注册用户', value: '73.7万', icon: '/images/icons/users.svg', iconBgColor: '#FFF9C4' }
     ],
-    // 分类列表（从后台拉取，失败用默认）
+    dashboardCollapsed: true,
+    dashboardNoTransition: false,
+    carouselList: [],
     categoryList: categoriesUtil.DEFAULT_CATEGORIES,
     currentCategoryId: 'hot',
-    // 项目列表
     projectList: [],
-    // 瀑布流列数据
     projectColumns: [[], []],
-    // 分页
     page: 1,
     pageSize: 10,
     hasMore: true,
     loading: false,
     refreshing: false,
-    // 项目列表加载失败（用于展示空状态+重试）
     loadError: false
   },
-  
-  onLoad(options) {
+
+  onLoad() {
     wx.setNavigationBarColor({ frontColor: '#ffffff', backgroundColor: '#1a1a24' });
-    this.setData({ dashboardData: dashboardIconSvg.applyInlineIcons(this.data.dashboardData) });
+    try {
+      const app = getApp();
+      if (app) {
+        app._notifyHomeDashboardIntro = () => this._tryConsumeDashboardIntro();
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    this.setData({
+      dashboardData: dashboardIconSvg.applyInlineIcons(this.data.dashboardData),
+      dashboardCollapsed: true
+    });
     this.loadCategories();
     this.loadDashboard();
+    this.loadHomeCarousel();
     this.loadProjects();
   },
 
   onShow() {
+    this._pageVisible = true;
     this.loadCategories();
+    if (this._hasDashboardIntroPending() && !this._shouldSkipLaunchIntro()) {
+      this.setData({ dashboardCollapsed: false, dashboardNoTransition: true });
+    }
+    if (this._deferDashboardIntro) {
+      this._deferDashboardIntro = false;
+    }
+    this._scheduleTryConsumeDashboardIntro();
+  },
+
+  onHide() {
+    this._pageVisible = false;
+  },
+
+  _scheduleTryConsumeDashboardIntro() {
+    if (!this._pageVisible) {
+      this._deferDashboardIntro = true;
+      return;
+    }
+    if (this._dashboardAnimating) return;
+    const delay = 120;
+    if (this._introScheduleTimer) {
+      clearTimeout(this._introScheduleTimer);
+    }
+    this._introScheduleTimer = setTimeout(() => {
+      this._introScheduleTimer = null;
+      if (!this._pageVisible) return;
+      if (this._deferDashboardIntro) {
+        this._deferDashboardIntro = false;
+      }
+      this._tryConsumeDashboardIntro();
+    }, delay);
+  },
+
+  _hasDashboardIntroPending() {
+    let pending = false;
+    try {
+      pending = !!wx.getStorageSync('homeDashboardIntro');
+    } catch (e) {
+      /* ignore */
+    }
+    try {
+      const app = getApp();
+      if (app && app.globalData && app.globalData.homeDashboardIntroPending) {
+        pending = true;
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    return pending;
+  },
+
+  _clearIntroFlags() {
+    try {
+      wx.removeStorageSync('homeDashboardIntro');
+    } catch (e) {
+      /* ignore */
+    }
+    try {
+      const app = getApp();
+      if (app && app.globalData) {
+        app.globalData.homeDashboardIntroPending = false;
+        app.globalData.homeDashboardIntroKind = null;
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  },
+
+  _shouldSkipLaunchIntro() {
+    try {
+      const app = getApp();
+      if (!app || !app.globalData) return false;
+      return (
+        app.globalData.homeDashboardIntroKind === 'launch' &&
+        app.globalData.homeDashboardLaunchIntroPlayed
+      );
+    } catch (e) {
+      return false;
+    }
+  },
+
+  _tryConsumeDashboardIntro() {
+    if (!this._pageVisible) {
+      this._deferDashboardIntro = true;
+      return false;
+    }
+    if (!this._hasDashboardIntroPending()) return false;
+    if (this._shouldSkipLaunchIntro()) return false;
+    this._runDashboardReveal();
+    return true;
+  },
+
+  /** 引导页/登录回首页时由 auth 主动调用；若页面尚未显示则延后到 onShow */
+  triggerDashboardIntro() {
+    if (!this._pageVisible) {
+      this._deferDashboardIntro = true;
+      return;
+    }
+    if (this._dashboardAnimating) return;
+    if (this._shouldSkipLaunchIntro()) return;
+    if (!this._hasDashboardIntroPending()) {
+      try {
+        const app = getApp();
+        if (app && app.globalData) {
+          app.globalData.homeDashboardIntroPending = true;
+          if (!app.globalData.homeDashboardIntroKind) {
+            app.globalData.homeDashboardIntroKind = 'launch';
+          }
+        }
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    this._runDashboardReveal();
+  },
+
+  onUnload() {
+    this._clearDashboardTimers();
+    if (this._introScheduleTimer) {
+      clearTimeout(this._introScheduleTimer);
+      this._introScheduleTimer = null;
+    }
+    try {
+      const app = getApp();
+      if (app && app._notifyHomeDashboardIntro) {
+        app._notifyHomeDashboardIntro = null;
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  },
+
+  _clearDashboardTimers() {
+    if (this._dashboardRevealTimer) {
+      clearTimeout(this._dashboardRevealTimer);
+      this._dashboardRevealTimer = null;
+    }
+    if (this._dashboardShowTimer) {
+      clearTimeout(this._dashboardShowTimer);
+      this._dashboardShowTimer = null;
+    }
+    if (this._dashboardHideTimer) {
+      clearTimeout(this._dashboardHideTimer);
+      this._dashboardHideTimer = null;
+    }
+  },
+
+  /** 先全屏展示看板 1.5s，再上滑收起露出轮播（须在首页已显示时调用） */
+  _runDashboardReveal() {
+    if (!this._pageVisible) {
+      this._deferDashboardIntro = true;
+      return;
+    }
+    if (this._dashboardAnimating) return;
+    this._clearDashboardTimers();
+    this._dashboardAnimating = true;
+    try {
+      const app = getApp();
+      if (app && app.globalData && app.globalData.homeDashboardIntroKind === 'launch') {
+        app.globalData.homeDashboardLaunchIntroPlayed = true;
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    this._clearIntroFlags();
+
+    this.setData(
+      {
+        dashboardCollapsed: false,
+        dashboardNoTransition: true
+      },
+      () => {
+        this._dashboardRevealTimer = setTimeout(() => {
+          this.setData({ dashboardNoTransition: false }, () => {
+            this._dashboardShowTimer = setTimeout(() => {
+              this.setData({ dashboardCollapsed: true });
+              this._dashboardHideTimer = setTimeout(() => {
+                this._dashboardAnimating = false;
+              }, DASHBOARD_ANIM_MS);
+            }, DASHBOARD_SHOW_MS);
+          });
+        }, 50);
+      }
+    );
+  },
+
+  onExpandDashboard() {
+    if (this._dashboardAnimating) return;
+    this._runDashboardReveal();
+  },
+
+  async loadHomeCarousel() {
+    try {
+      const data = await api.getConfig('home_carousel');
+      let list = [];
+      if (Array.isArray(data)) {
+        list = data;
+      }
+      list = list
+        .filter((item) => item && (item.cover || item.image))
+        .slice(0, 6)
+        .map((item, index) => ({
+          id: item.id || index + 1,
+          title: item.title || '',
+          cover: item.cover || item.image || '',
+          link: item.link || ''
+        }));
+      this.setData({ carouselList: list });
+    } catch (e) {
+      this.setData({ carouselList: [] });
+    }
+  },
+
+  onHomeCarouselTap(e) {
+    const index = e.currentTarget.dataset.index;
+    const item = this.data.carouselList[index];
+    if (!item || !item.link) return;
+    wx.showModal({
+      title: '打开链接',
+      content: '是否复制链接到剪贴板？',
+      confirmText: '复制',
+      cancelText: '取消',
+      success: (res) => {
+        if (res.confirm) {
+          wx.setClipboardData({
+            data: item.link,
+            success: () => wx.showToast({ title: '链接已复制', icon: 'success' })
+          });
+        }
+      }
+    });
   },
 
   async loadDashboard() {
     try {
       const data = await api.getConfig('dashboard');
       if (data && typeof data === 'object') {
-        const labels = { marketSize: '市场规模', serviceMerchants: '服务商家', strategicPartners: '战略合作', marketShare: '市场份额', registeredUsers: '注册用户' };
-        const icons = { marketSize: '/images/icons/chart.svg', serviceMerchants: '/images/icons/shop.svg', strategicPartners: '/images/icons/handshake.svg', marketShare: '/images/icons/pie-chart.svg', registeredUsers: '/images/icons/users.svg' };
-        const colors = { marketSize: '#E3F2FD', serviceMerchants: '#FFF9C4', strategicPartners: '#F5F5F5', marketShare: '#FCE4EC', registeredUsers: '#FFF9C4' };
-        const dashboardData = dashboardIconSvg.applyInlineIcons(Object.keys(labels).map(key => ({
-          key,
-          label: labels[key],
-          value: data[key] ?? '',
-          icon: icons[key],
-          iconBgColor: colors[key]
-        })));
+        const labels = {
+          marketSize: '市场规模',
+          serviceMerchants: '服务商家',
+          strategicPartners: '战略合作',
+          marketShare: '市场份额',
+          registeredUsers: '注册用户'
+        };
+        const icons = {
+          marketSize: '/images/icons/chart.svg',
+          serviceMerchants: '/images/icons/shop.svg',
+          strategicPartners: '/images/icons/handshake.svg',
+          marketShare: '/images/icons/pie-chart.svg',
+          registeredUsers: '/images/icons/users.svg'
+        };
+        const colors = {
+          marketSize: '#E3F2FD',
+          serviceMerchants: '#FFF9C4',
+          strategicPartners: '#F5F5F5',
+          marketShare: '#FCE4EC',
+          registeredUsers: '#FFF9C4'
+        };
+        const dashboardData = dashboardIconSvg.applyInlineIcons(
+          Object.keys(labels).map((key) => ({
+            key,
+            label: labels[key],
+            value: data[key] ?? '',
+            icon: icons[key],
+            iconBgColor: colors[key]
+          }))
+        );
         this.setData({ dashboardData });
       }
-    } catch (e) {}
+    } catch (e) {
+      /* ignore */
+    }
   },
 
-  // 加载项目分类（后台可添加/删除）
   async loadCategories() {
     try {
       const res = await api.getCategories();
@@ -72,8 +337,7 @@ Page({
       this.setData({ categoryList: categoriesUtil.DEFAULT_CATEGORIES });
     }
   },
-  
-  // 加载项目列表（对接 API，失败时不弹 toast，由空状态+重试展示）
+
   async loadProjects() {
     if (this.data.loading || !this.data.hasMore) return;
     this.setData({ loading: true, loadError: false });
@@ -106,7 +370,6 @@ Page({
     }
   },
 
-  // 重试加载项目列表（空状态点击重试）
   onRetryProjects() {
     this.setData({
       page: 1,
@@ -117,8 +380,7 @@ Page({
     });
     this.loadProjects();
   },
-  
-  // 下拉刷新
+
   onRefresh() {
     this.setData({
       refreshing: true,
@@ -128,39 +390,39 @@ Page({
       hasMore: true,
       loadError: false
     });
+    this.loadHomeCarousel();
     setTimeout(() => {
       this.loadProjects();
       this.setData({ refreshing: false });
     }, 800);
   },
-  
-  // 上拉加载更多
+
   onLoadMore() {
-    this.loadProjects()
+    this.loadProjects();
   },
-  
-  // 分类切换
+
   onCategoryChange(e) {
-    const { categoryId } = e.detail
+    const { categoryId } = e.detail;
     this.setData({
       currentCategoryId: categoryId,
       page: 1,
       projectList: [],
       projectColumns: [[], []],
       hasMore: true
-    })
-    this.loadProjects()
+    });
+    this.loadProjects();
   },
-  
-  // 搜索
+
   onSearch() {
-    // 跳转到搜索页面
     wx.navigateTo({
       url: '/pages/search/search'
-    })
+    });
   },
-  
-  // 项目卡片点击：在首页先请求详情再跳转，真机首次在详情页请求易失败
+
+  onLocationChange() {
+    /* 位置已写入本地/服务端画像，后续推荐与统计可在此扩展 */
+  },
+
   async onProjectTap(e) {
     const { projectId, project } = e.detail;
     if (!projectId) return;

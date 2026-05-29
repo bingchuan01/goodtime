@@ -20,7 +20,13 @@
     "pages/user/profile-edit/profile-edit",
     "pages/user/settings/settings",
     "pages/user/change-password/change-password",
-    "pages/user/doc/doc","pages/user/videos/videos"
+    "pages/user/doc/doc","pages/user/videos/videos",
+    "pages/growth/checkin/checkin",
+    "pages/points/mall/mall",
+    "pages/points/detail/detail",
+    "pages/points/orders/orders",
+    "pages/points/coupons/coupons",
+    "pages/growth/exp-ledger/exp-ledger"
   ],
   "window": {
     "navigationBarTextStyle": "black",
@@ -65,6 +71,12 @@
     ]
   },
   "style": "v2",
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于在地图上选择您的位置，便于展示地址并推荐本地服务"
+    }
+  },
+  "requiredPrivateInfos": ["chooseLocation"],
   "renderer": "skyline",
   "rendererOptions": {
     "skyline": {

@@ -2,7 +2,6 @@
 <navigation-bar title="支付页" back="{{true}}" color="white" background="linear-gradient(135deg, rgba(230,180,220,0.95) 0%, rgba(180,160,220,0.95) 100%)"></navigation-bar>
 
 <scroll-view class="page-container" scroll-y="{{true}}">
-  <!-- 提示词 + 权益说明 -->
   <view class="card card-intro">
     <text class="intro-text">会员包含多项权益，为入驻品牌提效</text>
     <view class="intro-link" bindtap="goBenefitsDoc">
@@ -11,18 +10,54 @@
     </view>
   </view>
 
-  <!-- 会员套餐卡片（价格从后台配置拉取） -->
+  <!-- 优惠体验卡（参考活动卡：已优惠价 + 现价 + 倒计时 + 右侧插图） -->
+  <view class="card card-trial-wrap" wx:if="{{trialVisible && trial}}">
+    <view
+      class="trial-card {{selectedPlan === 'trial' ? 'selected' : ''}}"
+      data-plan="trial"
+      bindtap="onSelectPlan"
+    >
+      <view class="trial-card-bg" style="background-image: url('{{trial.backgroundImage}}');" wx:if="{{trial.backgroundImage}}"></view>
+      <view class="trial-card-bg trial-card-bg-default" wx:else></view>
+      <view class="trial-corner-badge" wx:if="{{trial.badgeText}}">{{trial.badgeText}}</view>
+      <view class="trial-card-inner">
+        <view class="trial-left">
+          <text class="trial-name">{{trial.name}}</text>
+          <text class="trial-subtitle" wx:if="{{trial.subtitle}}">{{trial.subtitle}}</text>
+          <view class="trial-price-block">
+            <text class="trial-price">¥{{trial.price}}</text>
+            <text class="trial-saved" wx:if="{{trial.savedAmount > 0}}">已优惠¥{{trial.savedAmount}}</text>
+          </view>
+          <text class="trial-days">{{trial.days}}天体验发布</text>
+        </view>
+        <image
+          wx:if="{{trial.illustrationImage}}"
+          class="trial-illus"
+          src="{{trial.illustrationImage}}"
+          mode="aspectFit"
+        />
+      </view>
+      <view class="trial-countdown-bar" wx:if="{{trialShowCountdown && trialCountdownText}}">
+        <text class="trial-countdown-icon">⏱</text>
+        <text class="trial-countdown-label">{{trialCountdownText}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- V6 / V8（原样式 + 划线原价） -->
   <view class="card card-plans">
     <view class="plan-row">
       <view class="plan-card plan-{{item.id}} {{selectedPlan === item.id ? 'selected' : ''}}" wx:for="{{plans}}" wx:key="id" data-plan="{{item.id}}" bindtap="onSelectPlan">
         <view class="plan-tag">{{item.name}}</view>
         <view class="plan-duration">{{item.days}}天</view>
-        <view class="plan-price">¥{{item.price}} <text class="unit">元</text></view>
+        <view class="plan-price-row">
+          <text class="plan-price">¥{{item.price}}<text class="unit"> 元</text></text>
+          <text class="plan-original" wx:if="{{item.originalPrice > item.price}}">¥{{item.originalPrice}}</text>
+        </view>
       </view>
     </view>
   </view>
 
-  <!-- 选择支付方式 -->
   <view class="card card-payment">
     <view class="section-title">选择支付方式</view>
     <view class="payment-list">
@@ -37,17 +72,14 @@
     </view>
   </view>
 
-  <!-- 购买须知 -->
   <view class="card card-notice">
     <view class="section-title">购买须知</view>
     <rich-text class="notice-content" nodes="{{purchaseNotice}}"></rich-text>
   </view>
 
-  <!-- 底部占位 -->
   <view class="bottom-placeholder"></view>
 </scroll-view>
 
-<!-- 底部：协议 + 确认支付 -->
 <view class="footer-bar">
   <view class="agreement-row">
     <view class="checkbox-wrap" bindtap="toggleAgreement">

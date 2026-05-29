@@ -1,0 +1,9 @@
+<navigation-bar title="兑换记录" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<scroll-view class="page" scroll-y bindscrolltolower="loadMore">
+  <view wx:for="{{list}}" wx:key="id" class="item">
+    <view class="title">{{item.productName}}</view>
+    <view class="sub">-{{item.pointsCost}} 积分 · {{item.createdAt}}</view>
+  </view>
+  <view wx:if="{{list.length === 0 && !loading}}" class="empty">暂无记录</view>
+</scroll-view>

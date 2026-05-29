@@ -1,5 +1,6 @@
 // project-card.js
 const COVER_PLACEHOLDER = '/images/placeholder.svg';
+const memberUtil = require('../../utils/member');
 
 Component({
   properties: {
@@ -9,12 +10,17 @@ Component({
     }
   },
   data: {
-    displayCoverUrl: COVER_PLACEHOLDER
+    displayCoverUrl: COVER_PLACEHOLDER,
+    memberBadgeClass: ''
   },
   observers: {
-    'project': function (project) {
-      const url = (project && project.coverUrl) ? String(project.coverUrl).trim() : '';
-      this.setData({ displayCoverUrl: url || COVER_PLACEHOLDER });
+    project(project) {
+      const url = project && project.coverUrl ? String(project.coverUrl).trim() : '';
+      const lvl = project && project.memberLevel;
+      this.setData({
+        displayCoverUrl: url || COVER_PLACEHOLDER,
+        memberBadgeClass: memberUtil.getMemberBadgeClass(lvl)
+      });
     }
   },
   methods: {

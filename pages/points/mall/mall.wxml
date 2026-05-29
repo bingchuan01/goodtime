@@ -1,0 +1,33 @@
+<navigation-bar title="积分商城" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<scroll-view class="page" scroll-y>
+  <view class="balance-bar">
+    <view class="balance-main">
+      <text>我的积分</text>
+      <text class="balance-num">{{balance}}</text>
+    </view>
+    <view class="balance-links">
+      <text class="link" bindtap="goCoupons">券包</text>
+      <text class="link" bindtap="goOrders">记录</text>
+    </view>
+    <view class="expire-tip" wx:if="{{expiringSoon > 0}}">{{expiringSoon}} 积分将于 {{expireAt}} 前过期</view>
+  </view>
+
+  <view class="tabs">
+    <view wx:for="{{categories}}" wx:key="id"
+      class="tab {{activeCategory === item.id ? 'active' : ''}}"
+      data-id="{{item.id}}" bindtap="onCategoryTap">{{item.name}}</view>
+  </view>
+
+  <view class="product-list">
+    <view wx:for="{{products}}" wx:key="id" class="product-card" bindtap="goDetail" data-id="{{item.id}}">
+      <view class="product-name">{{item.name}}</view>
+      <view class="product-desc">{{item.description}}</view>
+      <view class="product-foot">
+        <text class="price">{{item.price}} 积分</text>
+        <text class="limit" wx:if="{{item.userMonthlyRemain != null}}">本月剩余 {{item.userMonthlyRemain}}</text>
+      </view>
+    </view>
+    <view wx:if="{{products.length === 0 && !loading}}" class="empty">暂无商品</view>
+  </view>
+</scroll-view>

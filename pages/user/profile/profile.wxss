@@ -110,15 +110,37 @@ page {
   border-bottom: none;
 }
 
-.menu-icon {
-  font-size: 40rpx;
+/* 菜单图标：与权益页同系粉色语义 SVG，无圆形粉底 */
+.menu-icon-wrap {
+  width: 44rpx;
+  height: 44rpx;
   margin-right: 20rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-icon-img {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.menu-icon-img--growth {
+  width: 44rpx;
+  height: 44rpx;
 }
 
 .menu-text {
   flex: 1;
   font-size: 28rpx;
   color: #333;
+}
+
+.menu-status {
+  font-size: 24rpx;
+  color: #FB7299;
+  margin-right: 12rpx;
 }
 
 .menu-arrow {

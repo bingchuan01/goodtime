@@ -1,18 +1,21 @@
+const auth = require('../../utils/auth');
+
 let timer = null;
 
 Page({
   data: {
-    src: '/images/splash.jpg',
+    src: '/images/splash.png',
     safeTop: 0,
-    windowHeight: 667
+    imageHeight: 667,
+    screenHeight: 844
   },
 
   onLoad() {
     const sys = wx.getSystemInfoSync();
-    const safeTop = sys.safeArea ? sys.safeArea.top : (sys.statusBarHeight + 32);
+    const sh = sys.screenHeight != null ? sys.screenHeight : sys.windowHeight;
     this.setData({
-      safeTop,
-      windowHeight: sys.windowHeight
+      screenHeight: sh,
+      imageHeight: sh
     });
   },
 
@@ -40,9 +43,7 @@ Page({
   goHome() {
     if (this._navigated) return;
     this._navigated = true;
-    wx.switchTab({
-      url: '/pages/index/index'
-    });
+    auth.goIndexFromGuide();
   },
 
   onImageError() {

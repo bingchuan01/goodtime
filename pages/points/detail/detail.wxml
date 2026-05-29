@@ -1,0 +1,12 @@
+<navigation-bar title="商品详情" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<view class="page" wx:if="{{product}}">
+  <view class="card">
+    <view class="name">{{product.name}}</view>
+    <view class="desc">{{product.description}}</view>
+    <view class="price">{{product.price}} 积分</view>
+    <view class="meta" wx:if="{{product.userMonthlyRemain != null}}">本月还可兑换 {{product.userMonthlyRemain}} 次</view>
+    <view class="meta">需要等级 Sv{{product.svMin}}+</view>
+  </view>
+  <button class="btn" bindtap="onRedeem" loading="{{redeeming}}">立即兑换</button>
+</view>

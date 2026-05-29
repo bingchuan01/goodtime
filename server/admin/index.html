@@ -72,6 +72,7 @@
         <a href="#" data-tab="leads">线索</a>
         <a href="#" data-tab="messages">咨询合作</a>
         <a href="#" data-tab="agreements">协议管理</a>
+        <a href="#" data-tab="growth-points">成长与积分</a>
         <a href="#" id="logoutBtn">退出</a>
       </div>
 
@@ -174,6 +175,33 @@
           <button type="button" id="saveDashboard">保存看板</button>
         </div>
         <div class="card">
+          <h3>首页轮播图（6 张）</h3>
+          <p style="font-size: 12px; color: #666; margin-bottom: 12px; line-height: 1.6;">
+            数据看板收起后，在原展区展示轮播。最多 6 张，按顺序轮播。<br/>
+            <strong>格式：</strong>JPG / PNG / WebP（推荐 WebP）<br/>
+            <strong>尺寸：</strong>宽 750px、高 360px（约 2.08:1），单张建议 ≤ 500KB<br/>
+            <strong>链接：</strong>选填，点击轮播图可复制外链（小程序内打开需配置业务域名）
+          </p>
+          <div id="homeCarouselList"></div>
+          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #eee;">
+            <h4 style="margin-bottom: 12px;">添加轮播图</h4>
+            <div class="config-row">
+              <label>标题（备注）</label>
+              <input type="text" id="newHomeCarouselTitle" placeholder="轮播 1" style="width: 280px;" />
+            </div>
+            <div class="config-row">
+              <label>图片 URL</label>
+              <input type="text" id="newHomeCarouselCover" placeholder="上传后自动填入 HTTPS 地址" style="width: 420px;" />
+              <button type="button" class="small" onclick="uploadHomeCarouselImage('newHomeCarouselCover')">上传图片</button>
+            </div>
+            <div class="config-row">
+              <label>跳转链接</label>
+              <input type="text" id="newHomeCarouselLink" placeholder="选填" style="width: 420px;" />
+            </div>
+            <button type="button" id="addHomeCarousel" style="margin-top: 8px;">添加（已满 6 张时不可添加）</button>
+          </div>
+        </div>
+        <div class="card">
           <h3>购买须知（支付页）</h3>
           <textarea id="cfg_purchase_notice" rows="6"></textarea>
           <button type="button" id="savePurchaseNotice" class="small">保存</button>
@@ -184,25 +212,97 @@
           <button type="button" id="saveBenefitsDoc" class="small">保存</button>
         </div>
         <div class="card">
-          <h3>会员定价</h3>
-          <p style="font-size: 12px; color: #666; margin-bottom: 12px;">调整后小程序支付页将显示新价格，创建订单时按此处金额计费。</p>
+          <h3>会员定价（V6 / V8）</h3>
+          <p style="font-size: 12px; color: #666; margin-bottom: 12px;">支付页 V6/V8 卡片样式不变；现价用于下单，划线价为展示用原价。</p>
           <div class="config-row">
-            <label>V6 价格（元）</label>
+            <label>V6 现价（元）</label>
             <input type="number" id="cfg_v6_price" min="0" step="1" placeholder="598" style="width: 120px;" />
+          </div>
+          <div class="config-row">
+            <label>V6 划线价（元）</label>
+            <input type="number" id="cfg_v6_original_price" min="0" step="1" placeholder="998" style="width: 120px;" />
           </div>
           <div class="config-row">
             <label>V6 有效天数</label>
             <input type="number" id="cfg_v6_days" min="1" step="1" placeholder="365" style="width: 120px;" />
           </div>
           <div class="config-row">
-            <label>V8 价格（元）</label>
+            <label>V8 现价（元）</label>
             <input type="number" id="cfg_v8_price" min="0" step="1" placeholder="21980" style="width: 120px;" />
+          </div>
+          <div class="config-row">
+            <label>V8 划线价（元）</label>
+            <input type="number" id="cfg_v8_original_price" min="0" step="1" placeholder="29980" style="width: 120px;" />
           </div>
           <div class="config-row">
             <label>V8 有效天数</label>
             <input type="number" id="cfg_v8_days" min="1" step="1" placeholder="365" style="width: 120px;" />
           </div>
-          <button type="button" id="saveMemberPlans" class="small">保存会员定价</button>
+          <button type="button" id="saveMemberPlans" class="small">保存 V6/V8 定价</button>
+        </div>
+        <div class="card">
+          <h3>优惠体验卡（体验者身份）</h3>
+          <p style="font-size: 12px; color: #666; margin-bottom: 12px;">支付页独立卡片：展示「已优惠¥X」+ 现价 + 倒计时；开通后用户为「体验者」（非 V6），体验期内可发布。原价用于计算已优惠金额，不展示划线。</p>
+          <div class="config-row">
+            <label>启用</label>
+            <select id="cfg_trial_enabled" style="width: 120px;">
+              <option value="1">是</option>
+              <option value="0">否</option>
+            </select>
+          </div>
+          <div class="config-row">
+            <label>展示名称</label>
+            <input type="text" id="cfg_trial_name" placeholder="优惠体验" style="width: 200px;" />
+          </div>
+          <div class="config-row">
+            <label>角标文案</label>
+            <input type="text" id="cfg_trial_badge" placeholder="限时体验" style="width: 200px;" />
+          </div>
+          <div class="config-row">
+            <label>副标题</label>
+            <input type="text" id="cfg_trial_subtitle" placeholder="体验期内可发布项目" style="width: 320px;" />
+          </div>
+          <div class="config-row">
+            <label>现价（元）</label>
+            <input type="number" id="cfg_trial_price" min="0" step="1" placeholder="99" style="width: 120px;" />
+          </div>
+          <div class="config-row">
+            <label>参考原价（元）</label>
+            <input type="number" id="cfg_trial_original_price" min="0" step="1" placeholder="598" style="width: 120px;" />
+            <span style="font-size: 12px; color: #999;">用于计算「已优惠¥X」</span>
+          </div>
+          <div class="config-row">
+            <label>有效天数</label>
+            <input type="number" id="cfg_trial_days" min="1" step="1" placeholder="30" style="width: 120px;" />
+          </div>
+          <div class="config-row">
+            <label>优惠倒计时</label>
+            <span style="font-size: 12px; color: #999;">小程序展示「仅剩X天X时」</span>
+          </div>
+          <div class="config-row">
+            <label>剩余天数</label>
+            <input type="number" id="cfg_trial_promo_days" min="0" step="1" placeholder="7" style="width: 80px;" />
+            <label style="min-width: auto; margin-left: 16px;">剩余小时</label>
+            <input type="number" id="cfg_trial_promo_hours" min="0" step="1" placeholder="0" style="width: 80px;" />
+            <span style="font-size: 12px; color: #999; margin-left: 8px;">保存时若未填下方结束时间，则按当前时间 + 天/时 生成</span>
+          </div>
+          <div class="config-row">
+            <label>活动结束时间</label>
+            <input type="text" id="cfg_trial_promo_end" placeholder="2026-12-31 23:59:59" style="width: 240px;" />
+            <span style="font-size: 12px; color: #999;">填写则优先；留空且上方有天/时则自动推算；均留空=长期有效且无倒计时</span>
+          </div>
+          <div class="config-row">
+            <label>卡片背景图 URL</label>
+            <input type="text" id="cfg_trial_bg" placeholder="浅色铺底图 URL" style="width: 400px;" />
+            <button type="button" class="small" onclick="uploadTrialBgImage('cfg_trial_bg')">上传</button>
+          </div>
+          <div class="config-row">
+            <label>右侧插图 URL</label>
+            <input type="text" id="cfg_trial_illus" placeholder="卡片右侧插图 URL" style="width: 400px;" />
+            <button type="button" class="small" onclick="uploadTrialBgImage('cfg_trial_illus')">上传</button>
+          </div>
+          <div id="cfg_trial_bg_preview" style="margin-bottom: 12px;"></div>
+          <button type="button" id="saveMemberTrial" class="small">保存体验优惠卡</button>
         </div>
       </div>
 
@@ -341,6 +441,61 @@
           </div>
         </div>
       </div>
+
+      <div id="tab-growth-points" class="tab-pane hidden">
+        <div class="card">
+          <h3>成长与积分</h3>
+          <div class="tabs" style="margin-top:8px">
+            <a href="#" data-gp-tab="gp-products" class="active">积分商品</a>
+            <a href="#" data-gp-tab="gp-orders">兑换订单</a>
+            <a href="#" data-gp-tab="gp-user">用户查询</a>
+            <a href="#" data-gp-tab="gp-edit-pool">改稿池</a>
+          </div>
+          <div id="gp-products" class="gp-pane">
+            <button type="button" class="small" onclick="loadPointProducts()">刷新</button>
+            <div class="table-wrap" style="margin-top:12px">
+              <table>
+                <thead><tr><th>ID</th><th>名称</th><th>分类</th><th>积分</th><th>月限</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody id="pointProductList"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="gp-orders" class="gp-pane hidden">
+            <button type="button" class="small" onclick="loadPointOrders()">刷新</button>
+            <div class="table-wrap" style="margin-top:12px">
+              <table>
+                <thead><tr><th>ID</th><th>用户</th><th>商品</th><th>积分</th><th>时间</th></tr></thead>
+                <tbody id="pointOrderList"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="gp-user" class="gp-pane hidden">
+            <input type="text" id="growthUserId" placeholder="用户 ID" />
+            <button type="button" class="small" onclick="loadGrowthUser()">查询成长</button>
+            <button type="button" class="small" onclick="loadPointsUser()">查询积分</button>
+            <div style="margin-top:12px">
+              <input type="number" id="adjustExpDelta" placeholder="加经验（正整数）" style="width:140px" />
+              <button type="button" class="small" onclick="adjustUserExp()">调整经验</button>
+            </div>
+            <div style="margin-top:8px">
+              <input type="number" id="adjustPointsDelta" placeholder="积分增减" style="width:140px" />
+              <button type="button" class="small" onclick="adjustUserPoints()">调整积分</button>
+            </div>
+            <pre id="growthUserResult" style="margin-top:12px;background:#f5f5f5;padding:12px;overflow:auto;max-height:400px"></pre>
+          </div>
+          <div id="gp-edit-pool" class="gp-pane hidden">
+            <input type="text" id="editPoolUserId" placeholder="用户 ID" />
+            <button type="button" class="small" onclick="loadContentEditPools()">查询改稿池</button>
+            <div class="table-wrap" style="margin-top:12px">
+              <table>
+                <thead><tr><th>ID</th><th>类型</th><th>总额</th><th>已用</th><th>周期</th><th>来源</th><th>操作</th></tr></thead>
+                <tbody id="editPoolList"></tbody>
+              </table>
+            </div>
+            <pre id="editPoolSummary" style="margin-top:12px;background:#f5f5f5;padding:12px;overflow:auto;max-height:200px"></pre>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -415,8 +570,149 @@
         if (tab === 'leads') loadLeads();
         if (tab === 'messages') loadMessages();
         if (tab === 'agreements') loadAgreements();
+        if (tab === 'growth-points') { loadPointProducts(); }
       };
     });
+
+    document.querySelectorAll('[data-gp-tab]').forEach(a => {
+      a.onclick = (e) => {
+        e.preventDefault();
+        document.querySelectorAll('[data-gp-tab]').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.gp-pane').forEach(x => x.classList.add('hidden'));
+        a.classList.add('active');
+        const t = a.getAttribute('data-gp-tab');
+        document.getElementById(t).classList.remove('hidden');
+        if (t === 'gp-products') loadPointProducts();
+        if (t === 'gp-orders') loadPointOrders();
+      };
+    });
+
+    async function loadContentEditPools() {
+      const uid = document.getElementById('editPoolUserId').value.trim();
+      const tbody = document.getElementById('editPoolList');
+      const summaryEl = document.getElementById('editPoolSummary');
+      if (!uid) {
+        tbody.innerHTML = '<tr><td colspan="7">请输入用户 ID</td></tr>';
+        summaryEl.textContent = '';
+        return;
+      }
+      try {
+        const res = await fetch(API + '/admin/growth/content-edit-pools?userId=' + encodeURIComponent(uid), { headers: authHeader() });
+        const data = await res.json();
+        if (data.code !== 0) {
+          tbody.innerHTML = '<tr><td colspan="7">加载失败</td></tr>';
+          summaryEl.textContent = JSON.stringify(data, null, 2);
+          return;
+        }
+        summaryEl.textContent = JSON.stringify(data.data && data.data.summary, null, 2);
+        const pools = (data.data && data.data.pools) || [];
+        tbody.innerHTML = pools.map(p => `<tr>
+          <td>${p.id}</td><td>${p.pool_type}</td><td>${p.quota_total}</td><td>${p.quota_used}</td>
+          <td>${p.period_start || ''} ~ ${p.period_end || ''}</td><td>${p.source || ''}</td>
+          <td>
+            <button class="small" onclick="adjustEditPool(${p.id}, ${p.quota_total}, ${p.quota_used})">调整</button>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="7">暂无改稿池记录</td></tr>';
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="7">网络错误</td></tr>';
+      }
+    }
+
+    async function adjustEditPool(poolId, currentTotal, currentUsed) {
+      const quotaTotal = prompt('总额度', String(currentTotal));
+      if (quotaTotal === null) return;
+      const quotaUsed = prompt('已用次数', String(currentUsed));
+      if (quotaUsed === null) return;
+      const res = await fetch(API + '/admin/growth/content-edit-pools/adjust', {
+        method: 'POST',
+        headers: authHeader(),
+        body: JSON.stringify({ poolId, quotaTotal: parseInt(quotaTotal, 10), quotaUsed: parseInt(quotaUsed, 10) })
+      });
+      const data = await res.json();
+      alert(data.message || (data.code === 0 ? '已更新' : '失败'));
+      loadContentEditPools();
+    }
+
+    async function loadPointProducts() {
+      const tbody = document.getElementById('pointProductList');
+      try {
+        const res = await fetch(API + '/admin/points/products', { headers: authHeader() });
+        const data = await res.json();
+        if (data.code !== 0) { tbody.innerHTML = '<tr><td colspan="7">加载失败</td></tr>'; return; }
+        tbody.innerHTML = (data.data || []).map(p => `<tr>
+          <td>${p.id}</td><td>${p.name}</td><td>${p.category}</td><td>${p.price}</td>
+          <td>${p.monthly_limit || '-'}</td><td>${p.status}</td>
+          <td>${p.status === 'active' ? `<button class="small" onclick="toggleProduct(${p.id},'inactive')">下架</button>` : `<button class="small" onclick="toggleProduct(${p.id},'active')">上架</button>`}</td>
+        </tr>`).join('') || '<tr><td colspan="7">暂无商品</td></tr>';
+      } catch (e) { tbody.innerHTML = '<tr><td colspan="7">网络错误</td></tr>'; }
+    }
+
+    async function toggleProduct(id, status) {
+      await fetch(API + '/admin/points/products/' + id + '/status', {
+        method: 'PATCH', headers: authHeader(), body: JSON.stringify({ status })
+      });
+      loadPointProducts();
+    }
+
+    async function loadPointOrders() {
+      const tbody = document.getElementById('pointOrderList');
+      try {
+        const res = await fetch(API + '/admin/points/orders', { headers: authHeader() });
+        const data = await res.json();
+        if (data.code !== 0) { tbody.innerHTML = '<tr><td colspan="5">加载失败</td></tr>'; return; }
+        const list = (data.data && data.data.list) || [];
+        tbody.innerHTML = list.map(o => `<tr>
+          <td>${o.id}</td><td>${o.nickname || o.user_id}</td><td>${o.product_name || o.product_id}</td>
+          <td>${o.points_cost}</td><td>${o.created_at || ''}</td>
+        </tr>`).join('') || '<tr><td colspan="5">暂无订单</td></tr>';
+      } catch (e) { tbody.innerHTML = '<tr><td colspan="5">网络错误</td></tr>'; }
+    }
+
+    async function loadGrowthUser() {
+      const uid = document.getElementById('growthUserId').value.trim();
+      const el = document.getElementById('growthUserResult');
+      if (!uid) { el.textContent = '请输入用户 ID'; return; }
+      try {
+        const res = await fetch(API + '/admin/growth/users/' + encodeURIComponent(uid), { headers: authHeader() });
+        const data = await res.json();
+        el.textContent = JSON.stringify(data.data || data, null, 2);
+      } catch (e) { el.textContent = '查询失败'; }
+    }
+
+    async function loadPointsUser() {
+      const uid = document.getElementById('growthUserId').value.trim();
+      const el = document.getElementById('growthUserResult');
+      if (!uid) { el.textContent = '请输入用户 ID'; return; }
+      try {
+        const res = await fetch(API + '/admin/points/users/' + encodeURIComponent(uid), { headers: authHeader() });
+        const data = await res.json();
+        el.textContent = JSON.stringify(data.data || data, null, 2);
+      } catch (e) { el.textContent = '查询失败'; }
+    }
+
+    async function adjustUserExp() {
+      const uid = document.getElementById('growthUserId').value.trim();
+      const delta = parseInt(document.getElementById('adjustExpDelta').value, 10);
+      if (!uid || !delta) return alert('请填写用户 ID 和正整数经验');
+      const res = await fetch(API + '/admin/growth/users/' + encodeURIComponent(uid) + '/adjust-exp', {
+        method: 'POST', headers: authHeader(), body: JSON.stringify({ delta, remark: '后台调整' })
+      });
+      const data = await res.json();
+      alert(data.message || '完成');
+      loadGrowthUser();
+    }
+
+    async function adjustUserPoints() {
+      const uid = document.getElementById('growthUserId').value.trim();
+      const delta = parseInt(document.getElementById('adjustPointsDelta').value, 10);
+      if (!uid || !delta) return alert('请填写用户 ID 和非零积分');
+      const res = await fetch(API + '/admin/points/users/' + encodeURIComponent(uid) + '/adjust', {
+        method: 'POST', headers: authHeader(), body: JSON.stringify({ delta, remark: '后台调整' })
+      });
+      const data = await res.json();
+      alert(data.message || '完成');
+      loadPointsUser();
+    }
 
     async function loadProjects(page) {
       projectPage = Math.max(1, parseInt(page, 10) || projectPage || 1);
@@ -808,11 +1104,12 @@
 
     async function loadConfig() {
       try {
-        const [dash, notice, benefits, memberPlans] = await Promise.all([
+        const [dash, notice, benefits, memberPlans, memberTrial] = await Promise.all([
           fetch(API + '/admin/config/dashboard', { headers: authHeader() }).then(r => r.json()),
           fetch(API + '/admin/config/purchase_notice', { headers: authHeader() }).then(r => r.json()),
           fetch(API + '/admin/config/benefits_doc', { headers: authHeader() }).then(r => r.json()),
-          fetch(API + '/admin/config/member_plans', { headers: authHeader() }).then(r => r.json())
+          fetch(API + '/admin/config/member_plans', { headers: authHeader() }).then(r => r.json()),
+          fetch(API + '/admin/config/member_trial', { headers: authHeader() }).then(r => r.json())
         ]);
         if (dash.code === 0 && dash.data) {
           const d = dash.data;
@@ -829,12 +1126,35 @@
           const v8 = memberPlans.data.find(p => p.id === 'v8');
           if (v6) {
             document.getElementById('cfg_v6_price').value = v6.price ?? '';
+            document.getElementById('cfg_v6_original_price').value = v6.originalPrice ?? v6.original_price ?? '';
             document.getElementById('cfg_v6_days').value = v6.days ?? '';
           }
           if (v8) {
             document.getElementById('cfg_v8_price').value = v8.price ?? '';
+            document.getElementById('cfg_v8_original_price').value = v8.originalPrice ?? v8.original_price ?? '';
             document.getElementById('cfg_v8_days').value = v8.days ?? '';
           }
+        }
+        loadHomeCarousel();
+        if (memberTrial.code === 0 && memberTrial.data && typeof memberTrial.data === 'object') {
+          const t = memberTrial.data;
+          document.getElementById('cfg_trial_enabled').value = (t.enabled === false || t.enabled === 0 || t.enabled === '0') ? '0' : '1';
+          document.getElementById('cfg_trial_name').value = t.name || '';
+          document.getElementById('cfg_trial_badge').value = t.badgeText || t.badge_text || '';
+          document.getElementById('cfg_trial_subtitle').value = t.subtitle || '';
+          document.getElementById('cfg_trial_price').value = t.price ?? '';
+          document.getElementById('cfg_trial_original_price').value = t.originalPrice ?? t.original_price ?? '';
+          document.getElementById('cfg_trial_days').value = t.days ?? '';
+          const promoEnd = t.promoEndAt || t.promo_end_at || '';
+          document.getElementById('cfg_trial_promo_end').value = promoEnd;
+          const rem = remainDaysHoursFromPromoEnd(promoEnd);
+          document.getElementById('cfg_trial_promo_days').value = rem.days !== '' ? rem.days : '';
+          document.getElementById('cfg_trial_promo_hours').value = rem.hours !== '' ? rem.hours : '';
+          const bg = t.backgroundImage || t.background_image || '';
+          const illus = t.illustrationImage || t.illustration_image || '';
+          document.getElementById('cfg_trial_bg').value = bg;
+          document.getElementById('cfg_trial_illus').value = illus;
+          updateTrialBgPreview(bg || illus);
         }
       } catch (e) {}
     }
@@ -863,43 +1183,198 @@
       const data = await res.json();
       alert(data.code === 0 ? '已保存' : (data.message || '失败'));
     };
-    document.getElementById('saveAboutDoc').onclick = async () => {
-      const value = document.getElementById('cfg_about_doc').value;
-      const res = await fetch(API + '/admin/config/about_doc', { method: 'PUT', headers: authHeader(), body: JSON.stringify(value) });
-      const data = await res.json();
-      alert(data.code === 0 ? '已保存' : (data.message || '失败'));
-    };
-    document.getElementById('savePrivacyDoc').onclick = async () => {
-      const value = document.getElementById('cfg_privacy_doc').value;
-      const res = await fetch(API + '/admin/config/privacy_doc', { method: 'PUT', headers: authHeader(), body: JSON.stringify(value) });
-      const data = await res.json();
-      alert(data.code === 0 ? '已保存' : (data.message || '失败'));
-    };
-    document.getElementById('saveUserAgreementDoc').onclick = async () => {
-      const value = document.getElementById('cfg_user_agreement_doc').value;
-      const res = await fetch(API + '/admin/config/user_agreement_doc', { method: 'PUT', headers: authHeader(), body: JSON.stringify(value) });
-      const data = await res.json();
-      alert(data.code === 0 ? '已保存' : (data.message || '失败'));
-    };
-    document.getElementById('saveThirdPartyDoc').onclick = async () => {
-      const value = document.getElementById('cfg_third_party_doc').value;
-      const res = await fetch(API + '/admin/config/third_party_doc', { method: 'PUT', headers: authHeader(), body: JSON.stringify(value) });
-      const data = await res.json();
-      alert(data.code === 0 ? '已保存' : (data.message || '失败'));
-    };
+    function bindClickOrAlert(buttonId, handler, label) {
+      const btn = document.getElementById(buttonId);
+      if (!btn) {
+        console.error('按钮不存在:', buttonId);
+        return;
+      }
+      btn.onclick = async () => {
+        try {
+          await handler();
+        } catch (e) {
+          console.error(e);
+          alert((label || '操作') + '失败：脚本异常，请打开控制台查看错误');
+        }
+      };
+    }
+
+    async function saveComplianceDoc(configKey, inputId, label, buttonId) {
+      const inputEl = document.getElementById(inputId);
+      if (!inputEl) {
+        alert((label || '文档') + '保存失败：输入框不存在');
+        return;
+      }
+      const value = inputEl.value || '';
+      const saveBtn = buttonId ? document.getElementById(buttonId) : null;
+      try {
+        // 明确给出点击反馈，避免“点了没反应”的体感。
+        if (saveBtn) saveBtn.disabled = true;
+        const saveRes = await fetch(API + '/admin/config/' + configKey, {
+          method: 'PUT',
+          headers: authHeader(),
+          body: JSON.stringify(value)
+        });
+        const saveData = await saveRes.json();
+        if (saveData.code !== 0) {
+          alert((label || '文档') + '保存失败：' + (saveData.message || '未知错误'));
+          return;
+        }
+
+        // 保存后立即回读，避免“提示成功但实际未生效”。
+        const verifyRes = await fetch(API + '/admin/config/' + configKey, { headers: authHeader() });
+        const verifyData = await verifyRes.json();
+        if (verifyData.code !== 0) {
+          alert((label || '文档') + '保存成功，但回读失败：' + (verifyData.message || '未知错误'));
+          return;
+        }
+        const latest = verifyData.data == null ? '' : String(verifyData.data);
+        inputEl.value = latest;
+        if (latest !== value) {
+          alert((label || '文档') + '已保存，但与输入存在差异，已回填最新内容。');
+          return;
+        }
+        alert((label || '文档') + '已保存并生效');
+      } catch (e) {
+        alert((label || '文档') + '保存失败：网络或服务异常');
+      } finally {
+        if (saveBtn) saveBtn.disabled = false;
+      }
+    }
+
+    bindClickOrAlert('saveAboutDoc', () => saveComplianceDoc('about_doc', 'cfg_about_doc', '关于我们', 'saveAboutDoc'), '关于我们保存');
+    bindClickOrAlert('savePrivacyDoc', () => saveComplianceDoc('privacy_doc', 'cfg_privacy_doc', '隐私协议', 'savePrivacyDoc'), '隐私协议保存');
+    bindClickOrAlert('saveUserAgreementDoc', () => saveComplianceDoc('user_agreement_doc', 'cfg_user_agreement_doc', '用户协议', 'saveUserAgreementDoc'), '用户协议保存');
+    bindClickOrAlert('saveThirdPartyDoc', () => saveComplianceDoc('third_party_doc', 'cfg_third_party_doc', '第三方信息共享清单', 'saveThirdPartyDoc'), '第三方信息共享清单保存');
+    function updateTrialBgPreview(url) {
+      const el = document.getElementById('cfg_trial_bg_preview');
+      if (!el) return;
+      if (url) {
+        el.innerHTML = '<img src="' + url + '" style="max-width: 320px; max-height: 120px; border-radius: 8px; border: 1px solid #eee;" />';
+      } else {
+        el.innerHTML = '';
+      }
+    }
+
+    function formatLocalDateTime(d) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+    }
+
+    function remainDaysHoursFromPromoEnd(promoEndAt) {
+      if (!promoEndAt || !String(promoEndAt).trim()) return { days: '', hours: '' };
+      const raw = String(promoEndAt).trim();
+      const end = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T'));
+      if (isNaN(end.getTime())) return { days: '', hours: '' };
+      const diff = end.getTime() - Date.now();
+      if (diff <= 0) return { days: 0, hours: 0 };
+      const dayMs = 24 * 60 * 60 * 1000;
+      const hourMs = 60 * 60 * 1000;
+      return {
+        days: Math.floor(diff / dayMs),
+        hours: Math.floor((diff % dayMs) / hourMs)
+      };
+    }
+
+    function resolveTrialPromoEndAt() {
+      const explicit = document.getElementById('cfg_trial_promo_end').value.trim();
+      if (explicit) return explicit;
+      const pd = parseInt(document.getElementById('cfg_trial_promo_days').value, 10);
+      const ph = parseInt(document.getElementById('cfg_trial_promo_hours').value, 10);
+      if (isNaN(pd) && isNaN(ph)) return '';
+      const days = isNaN(pd) ? 0 : Math.max(0, pd);
+      const hours = isNaN(ph) ? 0 : Math.max(0, ph);
+      if (days === 0 && hours === 0) return '';
+      const end = new Date();
+      end.setTime(end.getTime() + days * 24 * 60 * 60 * 1000 + hours * 60 * 60 * 1000);
+      return formatLocalDateTime(end);
+    }
+
     document.getElementById('saveMemberPlans').onclick = async () => {
       const v6Price = parseInt(document.getElementById('cfg_v6_price').value, 10);
+      const v6Orig = parseInt(document.getElementById('cfg_v6_original_price').value, 10);
       const v6Days = parseInt(document.getElementById('cfg_v6_days').value, 10);
       const v8Price = parseInt(document.getElementById('cfg_v8_price').value, 10);
+      const v8Orig = parseInt(document.getElementById('cfg_v8_original_price').value, 10);
       const v8Days = parseInt(document.getElementById('cfg_v8_days').value, 10);
       const plans = [
-        { id: 'v6', name: 'V6', price: isNaN(v6Price) ? 598 : Math.max(0, v6Price), days: isNaN(v6Days) ? 365 : Math.max(1, v6Days) },
-        { id: 'v8', name: 'V8', price: isNaN(v8Price) ? 21980 : Math.max(0, v8Price), days: isNaN(v8Days) ? 365 : Math.max(1, v8Days) }
+        {
+          id: 'v6',
+          name: 'V6',
+          price: isNaN(v6Price) ? 598 : Math.max(0, v6Price),
+          originalPrice: isNaN(v6Orig) ? 998 : Math.max(0, v6Orig),
+          days: isNaN(v6Days) ? 365 : Math.max(1, v6Days)
+        },
+        {
+          id: 'v8',
+          name: 'V8',
+          price: isNaN(v8Price) ? 21980 : Math.max(0, v8Price),
+          originalPrice: isNaN(v8Orig) ? 29980 : Math.max(0, v8Orig),
+          days: isNaN(v8Days) ? 365 : Math.max(1, v8Days)
+        }
       ];
       const res = await fetch(API + '/admin/config/member_plans', { method: 'PUT', headers: authHeader(), body: JSON.stringify(plans) });
       const data = await res.json();
-      alert(data.code === 0 ? '会员定价已保存' : (data.message || '失败'));
+      alert(data.code === 0 ? 'V6/V8 定价已保存' : (data.message || '失败'));
     };
+
+    document.getElementById('saveMemberTrial').onclick = async () => {
+      const price = parseInt(document.getElementById('cfg_trial_price').value, 10);
+      const originalPrice = parseInt(document.getElementById('cfg_trial_original_price').value, 10);
+      const days = parseInt(document.getElementById('cfg_trial_days').value, 10);
+      const trial = {
+        enabled: document.getElementById('cfg_trial_enabled').value === '1',
+        name: document.getElementById('cfg_trial_name').value.trim() || '优惠体验',
+        badgeText: document.getElementById('cfg_trial_badge').value.trim() || '限时体验',
+        subtitle: document.getElementById('cfg_trial_subtitle').value.trim() || '体验期内可发布项目',
+        price: isNaN(price) ? 99 : Math.max(0, price),
+        originalPrice: isNaN(originalPrice) ? 598 : Math.max(0, originalPrice),
+        days: isNaN(days) ? 30 : Math.max(1, days),
+        promoEndAt: resolveTrialPromoEndAt(),
+        backgroundImage: document.getElementById('cfg_trial_bg').value.trim(),
+        illustrationImage: document.getElementById('cfg_trial_illus').value.trim()
+      };
+      const res = await fetch(API + '/admin/config/member_trial', { method: 'PUT', headers: authHeader(), body: JSON.stringify(trial) });
+      const data = await res.json();
+      if (data.code === 0) updateTrialBgPreview(trial.backgroundImage);
+      alert(data.code === 0 ? '体验优惠卡已保存' : (data.message || '失败'));
+    };
+
+    async function uploadTrialBgImage(fieldId) {
+      const targetId = fieldId || 'cfg_trial_bg';
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+          const res = await fetch(API + '/upload', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token() },
+            body: formData
+          });
+          const data = await res.json();
+          if (data.code === 0 && data.data && data.data.url) {
+            document.getElementById(targetId).value = data.data.url;
+            if (targetId === 'cfg_trial_bg') updateTrialBgPreview(data.data.url);
+            alert('上传成功');
+          } else {
+            alert('上传失败: ' + (data.message || '未知错误'));
+          }
+        } catch (e) {
+          alert('上传失败: ' + e.message);
+        }
+      };
+      input.click();
+    }
 
     async function loadCarousel() {
       try {
@@ -973,6 +1448,129 @@
       const data = await res.json();
       alert(data.code === 0 ? '已保存' : (data.message || '失败'));
       if (data.code === 0) loadCarousel();
+    }
+
+    const HOME_CAROUSEL_MAX = 6;
+
+    async function loadHomeCarousel() {
+      try {
+        const res = await fetch(API + '/admin/config/home_carousel', { headers: authHeader() });
+        const data = await res.json();
+        const container = document.getElementById('homeCarouselList');
+        let list = [];
+        if (data.code === 0 && data.data && Array.isArray(data.data)) {
+          list = data.data.slice(0, HOME_CAROUSEL_MAX);
+        }
+        window._homeCarouselList = list;
+        if (list.length === 0) {
+          container.innerHTML = '<p style="color: #999;">暂无轮播图，请添加（最多 6 张）</p>';
+        } else {
+          container.innerHTML = list.map((item, index) => `
+            <div style="border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 4px;">
+              <div style="display: flex; gap: 12px; align-items: flex-start;">
+                ${item.cover ? `<img src="${item.cover}" style="width: 160px; height: 77px; object-fit: cover; border-radius: 4px;" />` : '<div style="width: 160px; height: 77px; background: #f0f0f0; border-radius: 4px; display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;">无图</div>'}
+                <div style="flex: 1;">
+                  <div style="margin-bottom: 6px;"><strong>${index + 1}. ${item.title || '未命名'}</strong></div>
+                  <div style="font-size: 12px; color: #666; margin-bottom: 4px;">图片: ${item.cover ? '<a href="' + item.cover + '" target="_blank">查看</a>' : '未设置'}</div>
+                  <div style="font-size: 12px; color: #666; margin-bottom: 8px;">链接: ${item.link || '无'}</div>
+                  <button class="small" onclick="editHomeCarouselItem(${index})">编辑</button>
+                  <button class="small secondary" onclick="deleteHomeCarouselItem(${index})">删除</button>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        console.error(e);
+        document.getElementById('homeCarouselList').innerHTML = '<p style="color: #c00;">加载失败</p>';
+      }
+    }
+
+    async function saveHomeCarousel() {
+      const list = (window._homeCarouselList || []).slice(0, HOME_CAROUSEL_MAX);
+      const res = await fetch(API + '/admin/config/home_carousel', {
+        method: 'PUT',
+        headers: authHeader(),
+        body: JSON.stringify(list)
+      });
+      const data = await res.json();
+      alert(data.code === 0 ? '首页轮播已保存' : (data.message || '失败'));
+      if (data.code === 0) loadHomeCarousel();
+    }
+
+    function editHomeCarouselItem(index) {
+      const item = window._homeCarouselList[index];
+      if (!item) return;
+      const title = prompt('标题（备注）', item.title || '');
+      if (title === null) return;
+      const cover = prompt('图片 URL', item.cover || '');
+      if (cover === null) return;
+      const link = prompt('跳转链接（选填）', item.link || '');
+      if (link === null) return;
+      window._homeCarouselList[index] = { id: item.id || index + 1, title, cover, link };
+      saveHomeCarousel();
+    }
+
+    function deleteHomeCarouselItem(index) {
+      if (!confirm('确定删除该轮播图？')) return;
+      window._homeCarouselList.splice(index, 1);
+      saveHomeCarousel();
+    }
+
+    document.getElementById('addHomeCarousel').onclick = async () => {
+      const list = window._homeCarouselList || [];
+      if (list.length >= HOME_CAROUSEL_MAX) {
+        alert('最多 6 张轮播图');
+        return;
+      }
+      const title = document.getElementById('newHomeCarouselTitle').value.trim() || ('轮播 ' + (list.length + 1));
+      const cover = document.getElementById('newHomeCarouselCover').value.trim();
+      const link = document.getElementById('newHomeCarouselLink').value.trim();
+      if (!cover) {
+        alert('请上传或填写图片 URL');
+        return;
+      }
+      list.push({
+        id: list.length > 0 ? Math.max(...list.map(i => i.id || 0)) + 1 : 1,
+        title,
+        cover,
+        link
+      });
+      window._homeCarouselList = list;
+      await saveHomeCarousel();
+      document.getElementById('newHomeCarouselTitle').value = '';
+      document.getElementById('newHomeCarouselCover').value = '';
+      document.getElementById('newHomeCarouselLink').value = '';
+    };
+
+    async function uploadHomeCarouselImage(fieldId) {
+      const targetId = fieldId || 'newHomeCarouselCover';
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/jpeg,image/png,image/webp,image/jpg';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+          const res = await fetch(API + '/upload', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token() },
+            body: formData
+          });
+          const data = await res.json();
+          if (data.code === 0 && data.data && data.data.url) {
+            document.getElementById(targetId).value = data.data.url;
+            alert('上传成功');
+          } else {
+            alert('上传失败: ' + (data.message || '未知错误'));
+          }
+        } catch (err) {
+          alert('上传失败: ' + err.message);
+        }
+      };
+      input.click();
     }
 
     document.getElementById('addCarousel').onclick = async () => {

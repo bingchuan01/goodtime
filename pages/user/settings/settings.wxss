@@ -30,9 +30,23 @@ page {
   opacity: 0.6;
 }
 
-.menu-icon {
-  font-size: 40rpx;
+.menu-icon-wrap {
+  width: 44rpx;
+  height: 44rpx;
   margin-right: 20rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-icon-img {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.menu-icon-wrap-muted .menu-icon-img {
+  opacity: 0.45;
 }
 
 .menu-text {

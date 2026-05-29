@@ -8,8 +8,20 @@ const fs = require('fs');
 const dbPath = path.join(__dirname, 'goodtime.db');
 let innerDb = null; // sql.js Database 实例
 let saveTimer = null;
+let txDepth = 0;
 
 function save() {
+  if (!innerDb) return;
+  if (txDepth > 0) return;
+  try {
+    const data = innerDb.export();
+    fs.writeFileSync(dbPath, Buffer.from(data));
+  } catch (e) {
+    console.error('db save error:', e.message);
+  }
+}
+
+function flushSave() {
   if (!innerDb) return;
   try {
     const data = innerDb.export();
@@ -73,11 +85,31 @@ function exec(sql) {
   save();
 }
 
+function withTransaction(fn) {
+  if (!innerDb) throw new Error('db not initialized');
+  txDepth += 1;
+  innerDb.run('BEGIN');
+  try {
+    const result = fn();
+    innerDb.run('COMMIT');
+    txDepth -= 1;
+    if (txDepth === 0) flushSave();
+    return result;
+  } catch (e) {
+    txDepth -= 1;
+    try {
+      innerDb.run('ROLLBACK');
+    } catch (_) {}
+    throw e;
+  }
+}
+
 const db = {
   prepare,
   exec(sql) {
     exec(sql);
-  }
+  },
+  withTransaction
 };
 
 async function init() {
@@ -102,6 +134,9 @@ async function init() {
       nickname TEXT NOT NULL,
       avatar TEXT DEFAULT '',
       openid TEXT,
+      phone TEXT,
+      email TEXT,
+      password_hash TEXT,
       member_level TEXT DEFAULT '',
       member_expire_time TEXT
     );
@@ -245,6 +280,24 @@ async function init() {
     if (!/duplicate column name/i.test(e.message)) throw e;
   }
   try {
+    innerDb.run('ALTER TABLE users ADD COLUMN phone TEXT');
+    save();
+  } catch (e) {
+    if (!/duplicate column name/i.test(e.message)) throw e;
+  }
+  try {
+    innerDb.run('ALTER TABLE users ADD COLUMN email TEXT');
+    save();
+  } catch (e) {
+    if (!/duplicate column name/i.test(e.message)) throw e;
+  }
+  try {
+    innerDb.run('ALTER TABLE users ADD COLUMN password_hash TEXT');
+    save();
+  } catch (e) {
+    if (!/duplicate column name/i.test(e.message)) throw e;
+  }
+  try {
     innerDb.run('ALTER TABLE users ADD COLUMN member_level TEXT DEFAULT ""');
     save();
   } catch (e) {
@@ -269,6 +322,42 @@ async function init() {
     if (!/duplicate column name/i.test(e.message)) throw e;
   }
   try {
+    innerDb.run('ALTER TABLE users ADD COLUMN location_city TEXT DEFAULT ""');
+    save();
+  } catch (e) {
+    if (!/duplicate column name/i.test(e.message)) throw e;
+  }
+  try {
+    innerDb.run('ALTER TABLE users ADD COLUMN location_region TEXT DEFAULT ""');
+    save();
+  } catch (e) {
+    if (!/duplicate column name/i.test(e.message)) throw e;
+  }
+  try {
+    innerDb.run('ALTER TABLE users ADD COLUMN location_lat REAL');
+    save();
+  } catch (e) {
+    if (!/duplicate column name/i.test(e.message)) throw e;
+  }
+  try {
+    innerDb.run('ALTER TABLE users ADD COLUMN location_lng REAL');
+    save();
+  } catch (e) {
+    if (!/duplicate column name/i.test(e.message)) throw e;
+  }
+  try {
+    innerDb.run('ALTER TABLE users ADD COLUMN location_address TEXT DEFAULT ""');
+    save();
+  } catch (e) {
+    if (!/duplicate column name/i.test(e.message)) throw e;
+  }
+  try {
+    innerDb.run('ALTER TABLE users ADD COLUMN location_updated_at TEXT');
+    save();
+  } catch (e) {
+    if (!/duplicate column name/i.test(e.message)) throw e;
+  }
+  try {
     innerDb.run('ALTER TABLE projects ADD COLUMN expire_at TEXT');
     save();
   } catch (e) {
@@ -276,6 +365,18 @@ async function init() {
   }
   try {
     innerDb.run('ALTER TABLE projects ADD COLUMN introduction TEXT');
+    save();
+  } catch (e) {
+    if (!/duplicate column name/i.test(e.message)) throw e;
+  }
+  try {
+    innerDb.run('ALTER TABLE orders ADD COLUMN out_trade_no TEXT');
+    save();
+  } catch (e) {
+    if (!/duplicate column name/i.test(e.message)) throw e;
+  }
+  try {
+    innerDb.run('ALTER TABLE orders ADD COLUMN transaction_id TEXT');
     save();
   } catch (e) {
     if (!/duplicate column name/i.test(e.message)) throw e;
@@ -293,6 +394,18 @@ async function init() {
   } catch (e) {}
   try {
     innerDb.run('CREATE TABLE IF NOT EXISTS user_settlement_agreements (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, project_id INTEGER, agreement_template_id INTEGER, signed_file_url TEXT NOT NULL, status TEXT DEFAULT "pending", reject_reason TEXT DEFAULT "", reviewed_by TEXT DEFAULT "", reviewed_at TEXT, created_at TEXT DEFAULT (datetime(\'now\', \'localtime\')), updated_at TEXT DEFAULT (datetime(\'now\', \'localtime\')))');
+    save();
+  } catch (e) {}
+  try {
+    innerDb.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_openid ON users(openid)');
+    save();
+  } catch (e) {}
+  try {
+    innerDb.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone ON users(phone)');
+    save();
+  } catch (e) {}
+  try {
+    innerDb.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)');
     save();
   } catch (e) {}
 
@@ -319,9 +432,9 @@ async function init() {
   }
 
   const defaults = [
-    ['hot', '热门', '/images/icons/fire.svg', 1],
-    ['trend', '趋势', '/images/icons/trend.svg', 2],
-    ['new', '上新', '/images/icons/new.svg', 3],
+    ['hot', '热门赛道', '/images/icons/fire.svg', 1],
+    ['trend', '前沿趋势', '/images/icons/trend.svg', 2],
+    ['new', '品牌上新', '/images/icons/new.svg', 3],
     ['food', '餐饮美食', '/images/icons/food.svg', 10],
     ['education', '教育培训', '/images/icons/education.svg', 11],
     ['beauty', '医美护肤', '/images/icons/beauty.svg', 12],
@@ -337,9 +450,12 @@ async function init() {
     ['homeTextile', '品牌家纺', '/images/icons/home-textile.svg', 22],
     ['game', '娱乐游戏', '/images/icons/game.svg', 23]
   ];
+  const escCat = (s) => (s || '').replace(/'/g, "''");
   defaults.forEach(([id, name, icon, sort]) => {
-    const esc = (s) => (s || '').replace(/'/g, "''");
-    innerDb.run(`INSERT OR IGNORE INTO categories (id, name, icon, sort, enabled) VALUES ('${esc(id)}', '${esc(name)}', '${esc(icon)}', ${Number(sort) || 0}, 1)`);
+    innerDb.run(`INSERT OR IGNORE INTO categories (id, name, icon, sort, enabled) VALUES ('${escCat(id)}', '${escCat(name)}', '${escCat(icon)}', ${Number(sort) || 0}, 1)`);
+  });
+  [['hot', '热门赛道'], ['trend', '前沿趋势'], ['new', '品牌上新']].forEach(([id, name]) => {
+    innerDb.run(`UPDATE categories SET name = '${escCat(name)}' WHERE id = '${escCat(id)}'`);
   });
   save();
 
@@ -356,6 +472,12 @@ async function init() {
       registeredUsers: '73.7万'
     })) + "')");
     innerDb.run("INSERT OR IGNORE INTO config (key, value) VALUES ('benefits_carousel', '[]')");
+    innerDb.run("INSERT OR IGNORE INTO config (key, value) VALUES ('home_carousel', '[]')");
+    save();
+  }
+
+  if (!db.prepare('SELECT 1 FROM config WHERE key = ?').get('home_carousel')) {
+    db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run('home_carousel', '[]');
     save();
   }
 
@@ -363,10 +485,28 @@ async function init() {
   const memberPlansRow = db.prepare('SELECT value FROM config WHERE key = ?').get('member_plans');
   if (!memberPlansRow) {
     const defaultPlans = JSON.stringify([
-      { id: 'v6', name: 'V6', price: 598, days: 365 },
-      { id: 'v8', name: 'V8', price: 21980, days: 365 }
+      { id: 'v6', name: 'V6', price: 598, originalPrice: 998, days: 365 },
+      { id: 'v8', name: 'V8', price: 21980, originalPrice: 29980, days: 365 }
     ]);
     db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run('member_plans', defaultPlans);
+    save();
+  }
+
+  const memberTrialRow = db.prepare('SELECT value FROM config WHERE key = ?').get('member_trial');
+  if (!memberTrialRow) {
+    const defaultTrial = JSON.stringify({
+      enabled: true,
+      name: '优惠体验',
+      badgeText: '限时体验',
+      subtitle: '体验期内可发布项目',
+      price: 99,
+      originalPrice: 598,
+      days: 30,
+      promoEndAt: '',
+      backgroundImage: '',
+      illustrationImage: ''
+    });
+    db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run('member_trial', defaultTrial);
     save();
   }
 
@@ -382,6 +522,225 @@ async function init() {
       db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run(key, value);
       save();
     }
+  }
+
+  // ---------- 成长 / 积分 / 商城（P0）----------
+  innerDb.run(`CREATE TABLE IF NOT EXISTS user_growth (
+    user_id TEXT PRIMARY KEY,
+    total_exp INTEGER DEFAULT 0,
+    sv_level INTEGER DEFAULT 1,
+    updated_at TEXT DEFAULT (datetime('now', 'localtime'))
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS exp_ledger (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    delta INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    ref_id TEXT DEFAULT '',
+    meta TEXT DEFAULT '',
+    coefficient REAL DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now', 'localtime'))
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS checkin_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    checkin_date TEXT NOT NULL,
+    is_makeup INTEGER DEFAULT 0,
+    exp_granted INTEGER DEFAULT 0,
+    points_granted INTEGER DEFAULT 0,
+    UNIQUE(user_id, checkin_date)
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS growth_daily_stats (
+    user_id TEXT NOT NULL,
+    stat_date TEXT NOT NULL,
+    exp_earned INTEGER DEFAULT 0,
+    share_count INTEGER DEFAULT 0,
+    click_count INTEGER DEFAULT 0,
+    points_earned INTEGER DEFAULT 0,
+    PRIMARY KEY(user_id, stat_date)
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS growth_streaks (
+    user_id TEXT PRIMARY KEY,
+    current_streak INTEGER DEFAULT 0,
+    last_checkin_date TEXT DEFAULT '',
+    longest_streak INTEGER DEFAULT 0
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS user_points (
+    user_id TEXT PRIMARY KEY,
+    balance INTEGER DEFAULT 0,
+    frozen INTEGER DEFAULT 0,
+    updated_at TEXT DEFAULT (datetime('now', 'localtime'))
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS point_ledger (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    delta INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    balance_after INTEGER DEFAULT 0,
+    ref_id TEXT DEFAULT '',
+    remark TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now', 'localtime'))
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS point_products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT DEFAULT 'growth',
+    name TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    price INTEGER NOT NULL,
+    stock INTEGER DEFAULT -1,
+    monthly_limit INTEGER DEFAULT 0,
+    sv_min INTEGER DEFAULT 1,
+    member_only INTEGER DEFAULT 0,
+    coupon_type TEXT DEFAULT '',
+    status TEXT DEFAULT 'active',
+    sort INTEGER DEFAULT 0,
+    meta TEXT DEFAULT ''
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS point_orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    product_id INTEGER NOT NULL,
+    quantity INTEGER DEFAULT 1,
+    points_cost INTEGER NOT NULL,
+    status TEXT DEFAULT 'completed',
+    project_id INTEGER,
+    created_at TEXT DEFAULT (datetime('now', 'localtime'))
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS user_coupons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    status TEXT DEFAULT 'unused',
+    expires_at TEXT,
+    used_at TEXT,
+    project_id INTEGER,
+    order_id INTEGER,
+    created_at TEXT DEFAULT (datetime('now', 'localtime'))
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS makeup_quota_monthly (
+    user_id TEXT NOT NULL,
+    year_month TEXT NOT NULL,
+    free_used INTEGER DEFAULT 0,
+    points_purchased INTEGER DEFAULT 0,
+    PRIMARY KEY(user_id, year_month)
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS user_publish_stats (
+    user_id TEXT PRIMARY KEY,
+    lifetime_count INTEGER DEFAULT 0,
+    last_published_at TEXT
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS content_edit_pool (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    pool_type TEXT DEFAULT 'homepage_brand',
+    quota_total INTEGER DEFAULT 0,
+    quota_used INTEGER DEFAULT 0,
+    period_start TEXT,
+    period_end TEXT,
+    source TEXT DEFAULT '',
+    order_id INTEGER,
+    created_at TEXT DEFAULT (datetime('now', 'localtime'))
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS content_edit_usage (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pool_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
+    project_id INTEGER NOT NULL,
+    source TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now', 'localtime'))
+  )`);
+  innerDb.run(`CREATE TABLE IF NOT EXISTS point_expiry_batches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    remaining INTEGER NOT NULL,
+    expire_at TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now', 'localtime'))
+  )`);
+  innerDb.run('CREATE INDEX IF NOT EXISTS idx_point_expiry_user ON point_expiry_batches(user_id)');
+  innerDb.run(`CREATE TABLE IF NOT EXISTS share_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    share_id TEXT DEFAULT '',
+    actor_user_id TEXT DEFAULT '',
+    ref_user_id TEXT DEFAULT '',
+    meta TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now', 'localtime'))
+  )`);
+  innerDb.run('CREATE INDEX IF NOT EXISTS idx_share_events_user ON share_events(user_id)');
+  innerDb.run(`CREATE TABLE IF NOT EXISTS project_display_extensions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    source TEXT DEFAULT '',
+    days_added INTEGER DEFAULT 0,
+    expire_at_after TEXT,
+    created_at TEXT DEFAULT (datetime('now', 'localtime'))
+  )`);
+  try {
+    innerDb.run('ALTER TABLE projects ADD COLUMN pinned_until TEXT');
+    save();
+  } catch (e) {
+    if (!/duplicate column name/i.test(e.message)) throw e;
+  }
+  innerDb.run('CREATE INDEX IF NOT EXISTS idx_exp_ledger_user ON exp_ledger(user_id)');
+  innerDb.run('CREATE INDEX IF NOT EXISTS idx_point_ledger_user ON point_ledger(user_id)');
+  innerDb.run('CREATE INDEX IF NOT EXISTS idx_point_orders_user ON point_orders(user_id)');
+  save();
+
+  const growthConfigRow = db.prepare('SELECT value FROM config WHERE key = ?').get('growth_rules');
+  if (!growthConfigRow) {
+    const growthRules = JSON.stringify({
+      svThresholds: [0, 50, 150, 350, 600, 1000, 1600, 2400, 4200, 6800, 10000, 16800, 26000],
+      dailyExpCap: 130,
+      dailyPointsCap: 300,
+      checkinExp: 5,
+      checkinPoints: 3,
+      streakBonusExp: 20,
+      streakBonusPoints: 15,
+      streakDays: 7
+    });
+    db.prepare('INSERT INTO config (key, value) VALUES (?, ?)').run('growth_rules', growthRules);
+    save();
+  }
+
+  const productCount = countByExec('SELECT COUNT(*) as c FROM point_products');
+  if (productCount && productCount.c === 0) {
+    const products = [
+      ['growth', '补签卡 ×1', '补签指定日期，每月积分购买最多3张', 50, -1, 3, 2, 0, 'makeup', 1],
+      ['growth', '经验加速卡 24h', '24小时内行为经验 +20%', 80, -1, 2, 1, 0, 'exp_boost', 2],
+      ['growth', '分享加成卡 24h', '24小时内分享经验 +30%', 60, -1, 2, 1, 0, 'share_boost', 3],
+      ['member', '会员专享·免费补签', '每月1次免费补签（与会员权益共用）', 0, -1, 1, 1, 1, 'makeup_free', 1],
+      ['gift', '电子徽章·分享达人', 'Sv3+ 可兑换的头像装饰徽章', 150, -1, 1, 3, 0, 'badge', 1]
+    ];
+    products.forEach(([cat, name, desc, price, stock, ml, sv, mo, ctype, sort]) => {
+      db.prepare(
+        `INSERT INTO point_products (category, name, description, price, stock, monthly_limit, sv_min, member_only, coupon_type, sort, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`
+      ).run(cat, name, desc, price, stock, ml, sv, mo, ctype, sort);
+    });
+    save();
+  }
+
+  const extendProduct = db.prepare(
+    "SELECT id FROM point_products WHERE coupon_type = 'extend_display' LIMIT 1"
+  ).get();
+  if (!extendProduct) {
+    db.prepare(
+      `INSERT INTO point_products (category, name, description, price, stock, monthly_limit, sv_min, member_only, coupon_type, sort, status)
+       VALUES ('display', '展示期延长券 +30天', '每项目限1次；min(发布日+365, 当前+30)', 300, -1, 1, 4, 0, 'extend_display', 1, 'active')`
+    ).run();
+    save();
+  }
+  const pinProduct = db.prepare(
+    "SELECT id FROM point_products WHERE coupon_type = 'pin' LIMIT 1"
+  ).get();
+  if (!pinProduct) {
+    db.prepare(
+      `INSERT INTO point_products (category, name, description, price, stock, monthly_limit, sv_min, member_only, coupon_type, sort, status)
+       VALUES ('display', '临时置顶卡 24h', '项目置顶24小时；每月限用1次', 200, -1, 1, 6, 0, 'pin', 2, 'active')`
+    ).run();
+    save();
   }
 
   const adminCount = countByExec('SELECT COUNT(*) as c FROM admin_users');

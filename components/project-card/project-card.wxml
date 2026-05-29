@@ -13,8 +13,6 @@
       <view wx:if="{{project.memberLevel !== 'V6'}}" class="play-icon"><view class="play-triangle"></view></view>
       <view wx:if="{{project.memberLevel !== 'V6'}}" class="duration">{{project.videoDuration}}</view>
     </view>
-    <!-- 金盾认证徽章：只有V8会员支持金盾认证 -->
-    <view wx:if="{{project.isOfficial && project.memberLevel === 'V8'}}" class="official-badge">金盾认证</view>
   </view>
   
   <!-- 内容信息 -->
@@ -31,10 +29,15 @@
     
     <!-- 信息行2：会员标签或平台认证标签 -->
     <view class="tag-row">
-      <view wx:if="{{project.memberLevel}}" class="member-badge member-{{project.memberLevel}}">
+      <view wx:if="{{project.memberLevel}}" class="member-badge member-{{memberBadgeClass}}">
         {{project.memberLevel}}
       </view>
-      <!-- 闪电图标：V6会员专属图标，表示闪电发布，所有V6会员项目都显示 -->
+      <image
+        wx:if="{{project.isOfficial && project.memberLevel === 'V8'}}"
+        class="golden-shield-icon"
+        src="/images/icons/golden-shield.svg"
+        mode="aspectFit"
+      />
       <image wx:if="{{project.memberLevel === 'V6'}}" class="member-tag" src="/images/icons/lightning.svg" mode="aspectFit"></image>
     </view>
     

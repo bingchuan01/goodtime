@@ -1,0 +1,24 @@
+<navigation-bar title="我的券包" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<scroll-view class="page" scroll-y>
+  <view wx:if="{{projectId && projectDisplay}}" class="project-banner">
+    <view class="banner-title">为项目 #{{projectId}} 用券</view>
+    <view class="banner-meta">展示至 {{projectDisplay.expireAt || '—'}}</view>
+    <view class="banner-meta" wx:if="{{projectDisplay.pinnedUntil}}">置顶至 {{projectDisplay.pinnedUntil}}</view>
+  </view>
+
+  <view wx:for="{{list}}" wx:key="id" class="card">
+    <view class="name">{{item.typeName}}</view>
+    <view class="meta">状态：{{item.status === 'unused' ? '未使用' : item.status}}</view>
+    <view class="meta" wx:if="{{item.expiresAt}}">有效期至 {{item.expiresAt}}</view>
+    <button
+      wx:if="{{item.status === 'unused' && (item.type === 'extend_display' || item.type === 'pin')}}"
+      class="btn-use"
+      data-id="{{item.id}}"
+      data-type="{{item.type}}"
+      bindtap="onUseCoupon"
+    >立即使用</button>
+    <view wx:elif="{{item.status === 'unused'}}" class="hint">请在对应功能页使用</view>
+  </view>
+  <view wx:if="{{list.length === 0 && !loading}}" class="empty">暂无可用券</view>
+</scroll-view>

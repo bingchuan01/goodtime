@@ -1,7 +1,7 @@
 // 项目发布页
 const api = require('../../utils/api');
 const auth = require('../../utils/auth');
-const permission = require('../../utils/permission');
+const member = require('../../utils/member');
 const util = require('../../utils/util');
 const categoriesUtil = require('../../utils/categories');
 
@@ -41,7 +41,11 @@ Page({
     editingDetailContent: '', // 编辑时保留原详情 HTML
     editingVideoUrl: '',
     editingVideoPoster: '',
-    
+    contentEditMode: false,
+
+    publishAccessOk: false,
+    publishEligibility: null,
+
     // UI状态
     showCategoryPicker: false, // 显示分类选择器
     uploading: false,
@@ -50,55 +54,85 @@ Page({
     categoryList: categoriesUtil.DEFAULT_CATEGORIES.map(c => ({ id: c.id, name: c.name }))
   },
 
-  onShow() {
+  async onShow() {
+    const ok = await this._enforcePublishAccess();
+    if (!ok) return;
+
     const editingId = wx.getStorageSync('editingProjectId');
+    const contentEdit = wx.getStorageSync('contentEditMode');
+    if (contentEdit) wx.removeStorageSync('contentEditMode');
     if (editingId) {
       wx.removeStorageSync('editingProjectId');
+      this.setData({ contentEditMode: !!contentEdit });
       this.loadProjectForEdit(editingId);
     }
   },
 
   onLoad() {
-    // 检查登录
-    if (!auth.checkLogin()) {
-      auth.requireLogin(() => {
-        wx.navigateBack();
-      });
-      return;
-    }
+    this.loadCategories();
+  },
 
-    // 获取用户会员等级
-    const userInfo = wx.getStorageSync('userInfo') || {};
-    const memberLevel = userInfo.memberLevel || '';
-    
-    // 根据会员等级设置默认发布类型
-    let defaultType = 'flash';
-    if (memberLevel === 'V8') {
-      defaultType = 'advanced';
-    } else if (memberLevel !== 'V6') {
-      // 非V6/V8会员，提示需要会员
+  /** Tab 页每次展示都校验（未登录 / 非会员 / 已过期均拦截） */
+  async _enforcePublishAccess() {
+    if (!auth.checkLogin()) {
+      this.setData({ publishAccessOk: false });
       wx.showModal({
         title: '提示',
-        content: '发布项目需要V6或V8会员权限，是否前往开通？',
-        confirmText: '去开通',
+        content: '发布项目需先登录',
+        confirmText: '去登录',
+        cancelText: '返回',
         success: (res) => {
           if (res.confirm) {
-            wx.switchTab({
-              url: '/pages/member/benefits/benefits'
-            });
+            wx.navigateTo({ url: '/pages/login/login' });
           } else {
-            wx.navigateBack();
+            wx.switchTab({ url: '/pages/index/index' });
           }
         }
       });
-      return;
+      return false;
     }
 
+    try {
+      await auth.refreshUserInfo();
+    } catch (e) {
+      /* 使用本地缓存继续校验 */
+    }
+
+    const gate = member.checkPublishAccess();
+    if (!gate.ok) {
+      this.setData({ publishAccessOk: false });
+      member.showPublishBlockedModal(gate.reason, () => {
+        wx.switchTab({ url: '/pages/index/index' });
+      });
+      return false;
+    }
+
+    const memberLevel = gate.memberLevel;
+    let publishType = 'flash';
+    if (memberLevel === 'V8') {
+      publishType = 'advanced';
+    }
     this.setData({
-      memberLevel: memberLevel,
-      publishType: defaultType
+      publishAccessOk: true,
+      memberLevel,
+      publishType
     });
-    this.loadCategories();
+
+    try {
+      const eligibility = await api.getGrowthPublishEligibility();
+      this.setData({ publishEligibility: eligibility });
+      if (eligibility && !eligibility.canPublish && eligibility.reason && !this.data.contentEditMode) {
+        wx.showModal({
+          title: '暂不可发布',
+          content: eligibility.reason,
+          showCancel: false
+        });
+      }
+    } catch (e) {
+      /* 接口不可用时仅依赖会员门槛 */
+    }
+
+    return true;
   },
 
   async loadCategories() {
@@ -162,7 +196,7 @@ Page({
     const type = e.currentTarget.dataset.type;
     if (type === 'advanced' && this.data.memberLevel !== 'V8') {
       wx.showToast({
-        title: '高级发布需要V8会员',
+        title: 'V8高级发布请联系客服开通',
         icon: 'none'
       });
       return;
@@ -718,20 +752,44 @@ Page({
   },
 
   // 提交审核
-  submitReview() {
-    // 先关闭可能残留的 toast/loading，避免遮挡或误以为无响应
+  async submitReview() {
     wx.hideToast();
     wx.hideLoading();
     if (!this.validateForm()) {
       return;
     }
-    // 直接执行上传并提交（支付功能未接入前不再弹支付确认框，避免点击无响应）
+    try {
+      await auth.refreshUserInfo();
+    } catch (e) {
+      /* ignore */
+    }
+    const gate = member.checkPublishAccess();
+    if (!gate.ok) {
+      member.showPublishBlockedModal(gate.reason);
+      return;
+    }
+    const el = this.data.publishEligibility;
+    if (!this.data.editingProjectId && el && !el.canPublish) {
+      wx.showToast({ title: el.reason || '暂不可发布', icon: 'none' });
+      return;
+    }
     this.doSubmitReview();
   },
 
   // 执行提交审核（上传文件后调用 API）
   async doSubmitReview() {
     const isEdit = !!this.data.editingProjectId;
+    try {
+      await auth.refreshUserInfo();
+    } catch (e) {
+      /* ignore */
+    }
+    const gate = member.checkPublishAccess();
+    if (!gate.ok) {
+      member.showPublishBlockedModal(gate.reason);
+      return;
+    }
+
     this.setData({ uploading: true });
     wx.showLoading({ title: isEdit ? '提交修改中...' : '提交中...' });
 
@@ -805,10 +863,24 @@ Page({
       };
 
       if (isEdit) {
+        if (this.data.contentEditMode) {
+          payload.contentEdit = true;
+        }
         await api.updateProject(this.data.editingProjectId, payload);
         wx.hideLoading();
-        wx.showToast({ title: '已提交修改，等待审核', icon: 'success', duration: 2000 });
-        this.setData({ uploading: false, editingProjectId: '', editingDetailContent: '', editingVideoUrl: '', editingVideoPoster: '' });
+        wx.showToast({
+          title: this.data.contentEditMode ? '改稿已提交，等待审核' : '已提交修改，等待审核',
+          icon: 'success',
+          duration: 2000
+        });
+        this.setData({
+          uploading: false,
+          editingProjectId: '',
+          editingDetailContent: '',
+          editingVideoUrl: '',
+          editingVideoPoster: '',
+          contentEditMode: false
+        });
         setTimeout(() => {
           wx.switchTab({ url: '/pages/index/index' });
         }, 2000);
@@ -847,7 +919,12 @@ Page({
     } catch (error) {
       wx.hideLoading();
       this.setData({ uploading: false });
-      wx.showToast({ title: error && error.message ? error.message : '提交失败', icon: 'none' });
+      const msg = (error && error.message) || '提交失败';
+      if (error && error.statusCode === 403 && /到期|续费/.test(msg)) {
+        member.showPublishBlockedModal('expired');
+        return;
+      }
+      wx.showToast({ title: msg, icon: 'none' });
     }
   },
 

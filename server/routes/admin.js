@@ -3,6 +3,8 @@ const router = express.Router();
 const crypto = require('crypto');
 const { db } = require('../db');
 const { adminAuth } = require('../middleware/adminAuth');
+const { computeProjectExpireAt } = require('../lib/growth/compute-project-expire-at');
+const { recordPublishApproved } = require('../lib/growth/publish-eligibility');
 
 /** 管理员登录 */
 router.post('/login', (req, res) => {
@@ -258,19 +260,28 @@ router.put('/projects/:id/audit', adminAuth, (req, res) => {
     const zone = (displayZone || '').trim();
     const reason = status === 'rejected' ? String(rejectReason || '').trim() : '';
 
-    // 项目到期时间统一为一年（自发布时间起）
     if (status === 'approved' && !p.published_at) {
+      const publishedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(p.user_id);
+      const draftProject = { ...p, published_at: publishedAt };
+      const expireAt = computeProjectExpireAt({ project: draftProject, user });
       db.prepare(
-        'UPDATE projects SET status = ?, reject_reason = ?, display_zone = ?, published_at = datetime(\'now\', \'localtime\'), expire_at = date(datetime(\'now\', \'localtime\'), \'+1 year\'), updated_at = datetime(\'now\', \'localtime\') WHERE id = ?'
-      ).run(status, reason, zone, id);
+        `UPDATE projects SET status = ?, reject_reason = ?, display_zone = ?,
+         published_at = ?, expire_at = ?, updated_at = datetime('now', 'localtime') WHERE id = ?`
+      ).run(status, reason, zone, publishedAt, expireAt, id);
+      recordPublishApproved(p.user_id, publishedAt);
     } else {
       db.prepare(
         'UPDATE projects SET status = ?, reject_reason = ?, display_zone = ?, updated_at = datetime(\'now\', \'localtime\') WHERE id = ?'
       ).run(status, reason, zone, id);
     }
     let row = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
-    if (status === 'approved' && row && !row.expire_at && row.published_at) {
-      db.prepare('UPDATE projects SET expire_at = date(?, \'+1 year\'), updated_at = datetime(\'now\', \'localtime\') WHERE id = ?').run(row.published_at, id);
+    if (status === 'approved' && row && row.published_at && !row.expire_at) {
+      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(row.user_id);
+      const expireAt = computeProjectExpireAt({ project: row, user });
+      db.prepare(
+        'UPDATE projects SET expire_at = ?, updated_at = datetime(\'now\', \'localtime\') WHERE id = ?'
+      ).run(expireAt, id);
       row = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
     }
     res.json({ code: 0, data: row, message: status === 'approved' ? '已通过' : '已退回' });
@@ -379,7 +390,7 @@ router.get('/config/:key', adminAuth, (req, res) => {
     const key = String(req.params.key || '').trim();
     const row = db.prepare('SELECT value FROM config WHERE key = ?').get(key);
     let value = row ? row.value : null;
-    if (value && (key === 'dashboard' || key === 'benefits_carousel' || key === 'member_plans')) {
+    if (value && (key === 'dashboard' || key === 'benefits_carousel' || key === 'home_carousel' || key === 'member_plans' || key === 'member_trial')) {
       try {
         value = JSON.parse(value);
       } catch (e) {}
@@ -448,6 +459,233 @@ router.get('/messages', adminAuth, (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ code: 500, message: '获取列表失败' });
+  }
+});
+
+/** ---------- 成长 / 积分管理（P0） ---------- */
+
+router.get('/points/products', adminAuth, (req, res) => {
+  try {
+    const rows = db.prepare('SELECT * FROM point_products ORDER BY sort ASC, id ASC').all();
+    res.json({ code: 0, data: rows, message: 'ok' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '获取商品失败' });
+  }
+});
+
+router.post('/points/products', adminAuth, (req, res) => {
+  try {
+    const b = req.body || {};
+    const name = String(b.name || '').trim();
+    if (!name) return res.status(400).json({ code: 400, message: '名称必填' });
+    const r = db.prepare(
+      `INSERT INTO point_products (category, name, description, price, stock, monthly_limit, sv_min, member_only, coupon_type, sort, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      String(b.category || 'growth'),
+      name,
+      String(b.description || ''),
+      Number(b.price) || 0,
+      b.stock != null ? Number(b.stock) : -1,
+      Number(b.monthly_limit || b.monthlyLimit) || 0,
+      Number(b.sv_min || b.svMin) || 1,
+      b.member_only || b.memberOnly ? 1 : 0,
+      String(b.coupon_type || b.couponType || ''),
+      Number(b.sort) || 0,
+      String(b.status || 'active')
+    );
+    const row = db.prepare('SELECT * FROM point_products WHERE id = ?').get(r.lastInsertRowid);
+    res.status(201).json({ code: 0, data: row, message: 'ok' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '创建失败' });
+  }
+});
+
+router.put('/points/products/:id', adminAuth, (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const b = req.body || {};
+    const p = db.prepare('SELECT id FROM point_products WHERE id = ?').get(id);
+    if (!p) return res.status(404).json({ code: 404, message: '商品不存在' });
+    db.prepare(
+      `UPDATE point_products SET category=?, name=?, description=?, price=?, stock=?, monthly_limit=?,
+       sv_min=?, member_only=?, coupon_type=?, sort=?, status=? WHERE id=?`
+    ).run(
+      String(b.category || 'growth'),
+      String(b.name || ''),
+      String(b.description || ''),
+      Number(b.price) || 0,
+      b.stock != null ? Number(b.stock) : -1,
+      Number(b.monthly_limit || b.monthlyLimit) || 0,
+      Number(b.sv_min || b.svMin) || 1,
+      b.member_only || b.memberOnly ? 1 : 0,
+      String(b.coupon_type || b.couponType || ''),
+      Number(b.sort) || 0,
+      String(b.status || 'active'),
+      id
+    );
+    const row = db.prepare('SELECT * FROM point_products WHERE id = ?').get(id);
+    res.json({ code: 0, data: row, message: 'ok' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '更新失败' });
+  }
+});
+
+router.patch('/points/products/:id/status', adminAuth, (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const status = String((req.body && req.body.status) || '').trim();
+    if (!['active', 'inactive'].includes(status)) {
+      return res.status(400).json({ code: 400, message: 'status 为 active 或 inactive' });
+    }
+    db.prepare('UPDATE point_products SET status = ? WHERE id = ?').run(status, id);
+    res.json({ code: 0, data: null, message: 'ok' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '操作失败' });
+  }
+});
+
+router.get('/points/orders', adminAuth, (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize, 10) || 20));
+    const offset = (page - 1) * pageSize;
+    const rows = db.prepare(
+      `SELECT o.*, p.name as product_name, u.nickname
+       FROM point_orders o
+       LEFT JOIN point_products p ON p.id = o.product_id
+       LEFT JOIN users u ON u.id = o.user_id
+       ORDER BY o.id DESC LIMIT ? OFFSET ?`
+    ).all(pageSize + 1, offset);
+    const hasMore = rows.length > pageSize;
+    res.json({ code: 0, data: { list: rows.slice(0, pageSize), hasMore }, message: 'ok' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '获取订单失败' });
+  }
+});
+
+router.get('/growth/users/:userId', adminAuth, (req, res) => {
+  try {
+    const userId = String(req.params.userId || '').trim();
+    const { getGrowthSummary } = require('../lib/growth/grant-exp-points');
+    const summary = getGrowthSummary(userId);
+    const checkins = db.prepare(
+      'SELECT * FROM checkin_records WHERE user_id = ? ORDER BY checkin_date DESC LIMIT 30'
+    ).all(userId);
+    const expLedger = db.prepare(
+      'SELECT * FROM exp_ledger WHERE user_id = ? ORDER BY id DESC LIMIT 20'
+    ).all(userId);
+    res.json({ code: 0, data: { summary, checkins, expLedger }, message: 'ok' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '查询失败' });
+  }
+});
+
+router.get('/growth/config', adminAuth, (req, res) => {
+  try {
+    const row = db.prepare('SELECT value FROM config WHERE key = ?').get('growth_rules');
+    let value = {};
+    try { value = JSON.parse(row && row.value ? row.value : '{}'); } catch (e) {}
+    res.json({ code: 0, data: value, message: 'ok' });
+  } catch (e) {
+    res.status(500).json({ code: 500, message: '获取失败' });
+  }
+});
+
+router.put('/growth/config', adminAuth, (req, res) => {
+  try {
+    const value = JSON.stringify(req.body || {});
+    db.prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)').run('growth_rules', value);
+    res.json({ code: 0, data: null, message: 'ok' });
+  } catch (e) {
+    res.status(500).json({ code: 500, message: '更新失败' });
+  }
+});
+
+router.post('/growth/users/:userId/adjust-exp', adminAuth, (req, res) => {
+  try {
+    const userId = String(req.params.userId || '').trim();
+    const { delta, remark } = req.body || {};
+    const { adminAdjustExp } = require('../lib/growth/grant-exp-points');
+    const result = adminAdjustExp(userId, delta, remark);
+    if (!result.ok) return res.status(400).json({ code: 400, message: result.message });
+    res.json({ code: 0, data: result, message: '经验已调整' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '调整失败' });
+  }
+});
+
+router.get('/points/users/:userId', adminAuth, (req, res) => {
+  try {
+    const userId = String(req.params.userId || '').trim();
+    const { getPointBalanceDetail } = require('../lib/growth/grant-exp-points');
+    const info = getPointBalanceDetail(userId);
+    const ledger = db.prepare(
+      'SELECT * FROM point_ledger WHERE user_id = ? ORDER BY id DESC LIMIT 30'
+    ).all(userId);
+    res.json({ code: 0, data: { ...info, ledger }, message: 'ok' });
+  } catch (e) {
+    res.status(500).json({ code: 500, message: '查询失败' });
+  }
+});
+
+router.post('/points/users/:userId/adjust', adminAuth, (req, res) => {
+  try {
+    const userId = String(req.params.userId || '').trim();
+    const { delta, remark } = req.body || {};
+    const { adminAdjustPoints } = require('../lib/growth/grant-exp-points');
+    const result = adminAdjustPoints(userId, delta, remark);
+    if (!result.ok) return res.status(400).json({ code: 400, message: result.message });
+    res.json({ code: 0, data: result, message: '积分已调整' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '调整失败' });
+  }
+});
+
+router.get('/growth/content-edit-pools', adminAuth, (req, res) => {
+  try {
+    const userId = String(req.query.userId || '').trim();
+    if (!userId) return res.status(400).json({ code: 400, message: '请提供 userId' });
+    const { getContentEditPoolSummary } = require('../lib/growth/content-edit-pool');
+    const pools = db.prepare(
+      `SELECT * FROM content_edit_pool WHERE user_id = ? ORDER BY period_start DESC LIMIT 50`
+    ).all(userId);
+    res.json({
+      code: 0,
+      data: { summary: getContentEditPoolSummary(userId), pools },
+      message: 'ok'
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '查询失败' });
+  }
+});
+
+router.post('/growth/content-edit-pools/adjust', adminAuth, (req, res) => {
+  try {
+    const { poolId, quotaTotal, quotaUsed } = req.body || {};
+    const id = parseInt(poolId, 10);
+    if (!id) return res.status(400).json({ code: 400, message: '无效 poolId' });
+    const row = db.prepare('SELECT * FROM content_edit_pool WHERE id = ?').get(id);
+    if (!row) return res.status(404).json({ code: 404, message: '改稿池不存在' });
+    const nextTotal = quotaTotal != null ? Math.max(0, parseInt(quotaTotal, 10) || 0) : Number(row.quota_total);
+    const nextUsed = quotaUsed != null ? Math.max(0, parseInt(quotaUsed, 10) || 0) : Number(row.quota_used);
+    if (nextUsed > nextTotal) {
+      return res.status(400).json({ code: 400, message: '已用次数不能大于总额度' });
+    }
+    db.prepare('UPDATE content_edit_pool SET quota_total = ?, quota_used = ? WHERE id = ?').run(nextTotal, nextUsed, id);
+    res.json({ code: 0, data: { poolId: id, quotaTotal: nextTotal, quotaUsed: nextUsed }, message: '已更新' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ code: 500, message: '调整失败' });
   }
 });
 

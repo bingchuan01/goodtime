@@ -66,17 +66,6 @@
   border-radius: 4rpx;
 }
 
-.official-badge {
-  position: absolute;
-  top: 10rpx;
-  left: 10rpx;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  font-size: 20rpx;
-  padding: 6rpx 12rpx;
-  border-radius: 4rpx;
-}
-
 .card-content {
   padding: 20rpx;
 }
@@ -121,7 +110,15 @@
 .tag-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
   margin-bottom: 12rpx;
+}
+
+.golden-shield-icon {
+  width: 36rpx;
+  height: 36rpx;
+  flex-shrink: 0;
 }
 
 .member-badge {
@@ -138,6 +135,10 @@
 
 .member-V8 {
   background-color: #FFD700;
+}
+
+.member-trial {
+  background-color: #e67e22;
 }
 
 .member-tag {

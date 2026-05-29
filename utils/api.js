@@ -3,7 +3,7 @@
 // BASE_URL 推荐配置（按环境只保留一种，其余注释掉或改 ENV 即可）
 // ---------------------------------------------------------------------------
 // 方式一：按环境切换（推荐）- 改 ENV 即可，无需改具体地址
-var ENV = 'prod'; // 'local' | 'device' | 'prod'
+var ENV = 'device'; // 'local' | 'device' | 'prod'
 var BASE_URL_MAP = {
   local: 'http://localhost:3000/api',           // 开发者工具模拟器，请求本机
   device: 'http://192.168.1.60:3000/api',       // 真机调试：改为你电脑的局域网 IP（与手机同 WiFi）
@@ -56,12 +56,26 @@ function request(url, method = 'GET', data = {}, extraHeader = {}, silent = fals
             reject(res.data);
           }
         } else if (res.statusCode === 401) {
-          wx.removeStorageSync('token');
-          wx.removeStorageSync('userInfo');
-          wx.reLaunch({
-            url: '/pages/login/login'
-          });
+          // 仅当本次请求确实携带了 token 仍被拒时，才清会话；避免「无 token 的并发请求」误触发整页重登
+          const authz = (header && header.Authorization) || '';
+          const hadBearerToken = /^Bearer\s+\S/.test(authz);
+          if (hadBearerToken) {
+            wx.removeStorageSync('token');
+            wx.removeStorageSync('userInfo');
+            wx.reLaunch({
+              url: '/pages/login/login'
+            });
+          }
           reject(res);
+        } else if (res.statusCode === 403 || res.statusCode === 400) {
+          const msg = (res.data && res.data.message) || (res.statusCode === 403 ? '无权限' : '请求失败');
+          if (!silent) {
+            wx.showToast({
+              title: msg,
+              icon: 'none'
+            });
+          }
+          reject({ ...(res.data || {}), message: msg, statusCode: res.statusCode });
         } else {
           if (!silent) {
             wx.showToast({
@@ -249,7 +263,28 @@ function uploadFileOrOss(filePath, ext) {
  * 微信登录
  */
 function wxLogin(code) {
-  return post('/user/login', { code });
+  return post('/user/login', { code, ...getShareRefPayload() });
+}
+
+/**
+ * 发送手机登录验证码
+ */
+function sendLoginCode(phone) {
+  return post('/user/login/sms/send', { phone });
+}
+
+/**
+ * 手机验证码登录/注册
+ */
+function smsLogin(phone, code) {
+  return post('/user/login/sms', { phone, code, ...getShareRefPayload() });
+}
+
+/**
+ * 账号密码登录
+ */
+function passwordLogin(account, password) {
+  return post('/user/login/password', { account, password, ...getShareRefPayload() });
 }
 
 /**
@@ -264,6 +299,14 @@ function getUserInfo() {
  */
 function updateUserInfo(data) {
   return put('/user/info', data);
+}
+
+function reverseGeocode(latitude, longitude) {
+  return get('/user/geocode/reverse', { latitude, longitude }, {}, true);
+}
+
+function updateUserLocation(data) {
+  return put('/user/location', data);
 }
 
 /**
@@ -413,11 +456,23 @@ function getMemberLevels() {
   return get('/member/levels');
 }
 
+/** 会员套餐目录（公开，含 V6/V8 与体验优惠卡） */
+function getMemberCatalog(silent = true) {
+  return get('/member/catalog', {}, {}, silent);
+}
+
 /**
  * 创建会员订单（V6，返回支付参数）
  */
 function createMemberOrder(plan) {
   return post('/member/order', { plan });
+}
+
+/**
+ * 支付成功但本地未写会员时：向微信查单并补写（幂等）
+ */
+function reconcileMemberOrder() {
+  return post('/member/reconcile', {});
 }
 
 /**
@@ -511,6 +566,130 @@ function uploadSignedAgreement(data) {
   });
 }
 
+// ============ 成长 / 积分 API（P0）============
+
+function getGrowthSummary() {
+  return get('/growth/summary');
+}
+
+function getGrowthLevels() {
+  return get('/growth/levels');
+}
+
+function postGrowthCheckin() {
+  return post('/growth/checkin', {});
+}
+
+function postGrowthCheckinMakeup(date) {
+  return post('/growth/checkin/makeup', { date });
+}
+
+function getGrowthCheckinCalendar(year, month) {
+  return get('/growth/checkin/calendar', { year, month });
+}
+
+function getGrowthPublishEligibility() {
+  return get('/growth/publish-eligibility');
+}
+
+function getPointsBalance() {
+  return get('/points/balance');
+}
+
+function getPointsLedger(params) {
+  return get('/points/ledger', params || {});
+}
+
+function getPointsLimits() {
+  return get('/points/limits');
+}
+
+function getPointsMallCategories() {
+  return get('/points/mall/categories');
+}
+
+function getPointsMallProducts(params) {
+  return get('/points/mall/products', params || {});
+}
+
+function getPointsMallProductDetail(id) {
+  return get('/points/mall/products/' + id);
+}
+
+function postPointsRedeem(data) {
+  return post('/points/mall/redeem', data || {});
+}
+
+function getPointsOrders(params) {
+  return get('/points/orders', params || {});
+}
+
+function getGrowthExpLedger(params) {
+  return get('/growth/exp/ledger', params || {});
+}
+
+function getPointsCoupons(params) {
+  return get('/points/coupons', params || {});
+}
+
+function getPointsOrderDetail(id) {
+  return get('/points/orders/' + id);
+}
+
+function getContentEditPool() {
+  return get('/growth/content-edit/pool');
+}
+
+function postGrowthShareReport(data) {
+  return post('/growth/share/report', data || {});
+}
+
+function getProjectDisplay(projectId) {
+  return get('/projects/' + projectId + '/display');
+}
+
+function postProjectExtendDisplay(projectId, couponId) {
+  return post('/projects/' + projectId + '/extend-display', { couponId });
+}
+
+function postProjectPin(projectId, couponId) {
+  return post('/projects/' + projectId + '/pin', { couponId });
+}
+
+function postPointsCouponUse(couponId, projectId) {
+  return post('/points/coupons/' + couponId + '/use', { projectId });
+}
+
+function getShareRefPayload() {
+  try {
+    const refUserId = wx.getStorageSync('shareRefUserId') || '';
+    const shareId = wx.getStorageSync('shareRefShareId') || '';
+    if (!refUserId) return {};
+    return { refUserId: String(refUserId), shareId: String(shareId || '') };
+  } catch (e) {
+    return {};
+  }
+}
+
+function clearShareRef() {
+  try {
+    wx.removeStorageSync('shareRefUserId');
+    wx.removeStorageSync('shareRefShareId');
+  } catch (e) {
+    /* ignore */
+  }
+}
+
+function saveShareRef(fromUid, shareId) {
+  if (!fromUid) return;
+  try {
+    wx.setStorageSync('shareRefUserId', String(fromUid));
+    if (shareId) wx.setStorageSync('shareRefShareId', String(shareId));
+  } catch (e) {
+    /* ignore */
+  }
+}
+
 module.exports = {
   // 基础方法
   request,
@@ -525,8 +704,13 @@ module.exports = {
 
   // 用户相关
   wxLogin,
+  sendLoginCode,
+  smsLogin,
+  passwordLogin,
   getUserInfo,
   updateUserInfo,
+  reverseGeocode,
+  updateUserLocation,
   getUserVideos,
   
   // 项目相关
@@ -555,7 +739,9 @@ module.exports = {
   // 会员相关
   getMemberInfo,
   getMemberLevels,
+  getMemberCatalog,
   createMemberOrder,
+  reconcileMemberOrder,
   getMemberBenefits,
   
   // 权限相关
@@ -571,7 +757,35 @@ module.exports = {
 
   // 入驻协议相关
   getActiveAgreementTemplate,
-  uploadSignedAgreement
+  uploadSignedAgreement,
+
+  // 成长 / 积分
+  getGrowthSummary,
+  getGrowthLevels,
+  postGrowthCheckin,
+  postGrowthCheckinMakeup,
+  getGrowthCheckinCalendar,
+  getGrowthPublishEligibility,
+  getPointsBalance,
+  getPointsLedger,
+  getPointsLimits,
+  getPointsMallCategories,
+  getPointsMallProducts,
+  getPointsMallProductDetail,
+  postPointsRedeem,
+  getPointsOrders,
+  getGrowthExpLedger,
+  getPointsCoupons,
+  getPointsOrderDetail,
+  getContentEditPool,
+  postGrowthShareReport,
+  getProjectDisplay,
+  postProjectExtendDisplay,
+  postProjectPin,
+  postPointsCouponUse,
+  getShareRefPayload,
+  clearShareRef,
+  saveShareRef
 };
 
 

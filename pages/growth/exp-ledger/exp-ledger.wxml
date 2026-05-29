@@ -1,0 +1,12 @@
+<navigation-bar title="经验流水" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<scroll-view class="page" scroll-y bindscrolltolower="loadMore">
+  <view wx:for="{{list}}" wx:key="id" class="row">
+    <view class="left">
+      <text class="action">{{item.actionLabel}}</text>
+      <text class="time">{{item.createdAt}}</text>
+    </view>
+    <text class="delta">+{{item.delta}}</text>
+  </view>
+  <view wx:if="{{list.length === 0 && !loading}}" class="empty">暂无记录</view>
+</scroll-view>

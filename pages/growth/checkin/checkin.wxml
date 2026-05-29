@@ -1,0 +1,41 @@
+<navigation-bar title="成长中心" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+<scroll-view class="page" scroll-y>
+  <view class="hero">
+    <view class="level-row">
+      <text class="sv-name">{{summary.svName || 'Sv1'}}</text>
+      <text class="exp-text">{{summary.totalExp || 0}} EXP</text>
+    </view>
+    <view class="progress-wrap" wx:if="{{summary.expToNext > 0}}">
+      <view class="progress-bar">
+        <view class="progress-fill" style="width: {{progressPercent}}%"></view>
+      </view>
+      <text class="progress-tip">距下一级还需 {{summary.expToNext}} 经验</text>
+    </view>
+    <view class="points-row">
+      <text>积分 {{summary.pointBalance || 0}}</text>
+      <text class="link" bindtap="goMall">商城</text>
+      <text class="link" bindtap="goExpLedger">流水</text>
+    </view>
+    <view class="coef-tip" wx:if="{{summary.roleCoefficient > 1}}">经验系数 ×{{summary.roleCoefficient}}</view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">每日签到</view>
+    <view class="streak">连续 {{summary.streakDays || 0}} 天 · 满7天额外 +20 EXP</view>
+    <button class="btn-primary" bindtap="onCheckin" disabled="{{checkedToday}}">{{checkedToday ? '今日已签到' : '签到 +5 EXP'}}</button>
+  </view>
+
+  <view class="card">
+    <view class="card-title">本月签到</view>
+    <text class="makeup-hint">点击未签到的过去日期可补签（会员每月1次免费，或50积分/次，月购≤3）</text>
+    <view class="calendar-grid">
+      <view wx:for="{{calendarDays}}" wx:key="date"
+        class="cal-day {{item.checked ? 'checked' : ''}} {{item.canMakeup ? 'makeup' : ''}} {{item.isToday ? 'today' : ''}}"
+        data-date="{{item.date}}" data-can="{{item.canMakeup}}"
+        bindtap="onDayTap">
+        <text>{{item.day}}</text>
+      </view>
+    </view>
+  </view>
+</scroll-view>

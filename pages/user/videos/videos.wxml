@@ -28,13 +28,18 @@
       </view>
       <view class="info">
         <view class="title">{{item.title}}</view>
-        <view class="meta">{{formatTime(item.createdAt || item.created_at)}}</view>
+        <view class="meta">
+          <text class="meta-label">{{item.timeLabel}}：</text>
+          <text class="meta-value">{{item.timeDisplay}}</text>
+        </view>
         <view class="reject-reason" wx:if="{{item.status === 'rejected' && item.rejectReason}}">
           <text class="reason-label">退回原因：</text><text class="reason-text">{{item.rejectReason}}</text>
         </view>
         <view class="actions">
           <button wx:if="{{item.status === 'rejected'}}" class="btn-edit" data-id="{{item.id}}" bindtap="onEdit" catchtap="onEdit">编辑</button>
-          <view wx:if="{{item.status === 'approved'}}" class="link-tip">点击查看详情</view>
+          <button wx:if="{{item.status === 'approved' && editPool && editPool.canApply}}" class="btn-edit" data-id="{{item.id}}" bindtap="onContentEdit" catchtap="onContentEdit">内容改稿</button>
+          <button wx:if="{{item.status === 'approved'}}" class="btn-coupon" data-id="{{item.id}}" bindtap="onUseCoupon" catchtap="onUseCoupon">用券</button>
+          <view wx:if="{{item.status === 'approved' && !(editPool && editPool.canApply)}}" class="link-tip">点击查看详情</view>
         </view>
       </view>
     </view>

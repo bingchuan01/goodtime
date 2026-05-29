@@ -100,6 +100,15 @@
   font-size: 24rpx;
   color: #999;
   margin-top: 8rpx;
+  line-height: 1.4;
+}
+
+.meta-label {
+  color: #888;
+}
+
+.meta-value {
+  color: #666;
 }
 
 .reject-reason {
@@ -126,6 +135,17 @@
   font-size: 24rpx;
   color: #FF6B35;
   border: 1rpx solid #FF6B35;
+  border-radius: 8rpx;
+  background: #fff;
+  margin-right: 12rpx;
+}
+
+.btn-coupon {
+  display: inline-block;
+  padding: 10rpx 24rpx;
+  font-size: 24rpx;
+  color: #576b95;
+  border: 1rpx solid #576b95;
   border-radius: 8rpx;
   background: #fff;
 }

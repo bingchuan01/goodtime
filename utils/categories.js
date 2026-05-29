@@ -3,6 +3,13 @@
  * 官方后台可添加/删除分类，前端从接口拉取，失败时使用此默认列表
  */
 
+/** 首页展区展示名（与 id 绑定，接口仍返回旧名时也强制覆盖） */
+const ZONE_DISPLAY_NAMES = {
+  hot: '热门赛道',
+  trend: '前沿趋势',
+  new: '品牌上新'
+};
+
 const ICON_MAP = {
   hot: '/images/icons/fire.svg',
   trend: '/images/icons/trend.svg',
@@ -29,9 +36,9 @@ const ICON_MAP = {
 // 默认分类（接口不可用时的回退）
 // 前6项用于导航栏，其余用于发布选择
 const DEFAULT_CATEGORIES = [
-  { id: 'hot', name: '热门', icon: '/images/icons/fire.svg' },
-  { id: 'trend', name: '趋势', icon: '/images/icons/trend.svg' },
-  { id: 'new', name: '上新', icon: '/images/icons/new.svg' },
+  { id: 'hot', name: '热门赛道', icon: '/images/icons/fire.svg' },
+  { id: 'trend', name: '前沿趋势', icon: '/images/icons/trend.svg' },
+  { id: 'new', name: '品牌上新', icon: '/images/icons/new.svg' },
   { id: 'education', name: '教育培训', icon: '/images/icons/education.svg' },
   { id: 'beauty', name: '医美护肤', icon: '/images/icons/beauty.svg' },
   { id: 'food', name: '餐饮美食', icon: '/images/icons/food.svg' },
@@ -65,10 +72,15 @@ function normalizeCategory(item) {
   if (ICON_MAP[item.id]) {
     icon = ICON_MAP[item.id];
   }
+  const id = String(item.id);
+  let name = item.name || item.label || '';
+  if (ZONE_DISPLAY_NAMES[id]) {
+    name = ZONE_DISPLAY_NAMES[id];
+  }
   return {
-    id: String(item.id),
-    name: item.name || item.label || '',
-    icon: icon
+    id,
+    name,
+    icon
   };
 }
 
@@ -83,6 +95,7 @@ function normalizeList(list) {
 
 module.exports = {
   DEFAULT_CATEGORIES,
+  ZONE_DISPLAY_NAMES,
   ICON_MAP,
   normalizeCategory,
   normalizeList

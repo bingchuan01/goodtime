@@ -4,27 +4,41 @@ const api = require('../../../utils/api');
 
 Page({
   data: {
+    isLoggedIn: false,
+    loginStatusText: '未登录',
     userInfo: null,
     stats: {
       projectCount: 0,
       likeCount: 0,
       viewCount: 0
-    }
-  },
-
-  onLoad() {
-    if (!auth.checkLogin()) {
-      auth.requireLogin();
-      return;
-    }
-    this.loadUserInfo();
+    },
+    growthSummary: null
   },
 
   onShow() {
-    this.loadUserInfo();
+    this._syncLoginState();
+    if (auth.checkLogin()) {
+      this.loadUserInfo();
+    }
   },
 
-  // 加载用户信息
+  _syncLoginState() {
+    const isLoggedIn = auth.checkLogin();
+    this.setData({
+      isLoggedIn,
+      loginStatusText: isLoggedIn ? '已登录' : '未登录',
+      userInfo: isLoggedIn ? auth.getUserInfo() || {} : null
+    });
+  },
+
+  goLogin() {
+    if (auth.checkLogin()) {
+      wx.showToast({ title: '您已登录', icon: 'none' });
+      return;
+    }
+    wx.navigateTo({ url: '/pages/login/login' });
+  },
+
   async loadUserInfo() {
     const userInfo = auth.getUserInfo();
     this.setData({ userInfo: userInfo || {} });
@@ -33,12 +47,21 @@ Page({
       const updatedInfo = auth.getUserInfo();
       this.setData({ userInfo: updatedInfo || {} });
     } catch (e) {
-      // 刷新失败时使用缓存
+      /* 刷新失败时使用缓存 */
     }
     this.loadStats();
+    this.loadGrowthBrief();
   },
 
-  // 加载统计数据
+  async loadGrowthBrief() {
+    try {
+      const summary = await api.getGrowthSummary();
+      this.setData({ growthSummary: summary });
+    } catch (e) {
+      /* 未登录或接口不可用 */
+    }
+  },
+
   async loadStats() {
     const userInfo = this.data.userInfo;
     if (!userInfo || !userInfo.id) return;
@@ -53,42 +76,68 @@ Page({
     }
   },
 
-  // 编辑资料（点击头像或编辑按钮）
   editProfile() {
+    if (!auth.checkLogin()) {
+      auth.requireLogin();
+      return;
+    }
     wx.navigateTo({
       url: '/pages/user/profile-edit/profile-edit'
     });
   },
 
-  // 设置页
   goSettings() {
+    if (!auth.checkLogin()) {
+      auth.requireLogin();
+      return;
+    }
     wx.navigateTo({
       url: '/pages/user/settings/settings'
     });
   },
 
-  // 我的发布（项目管理栏）
   myProjects() {
+    if (!auth.checkLogin()) {
+      auth.requireLogin();
+      return;
+    }
     wx.navigateTo({
       url: '/pages/user/videos/videos'
     });
   },
 
-  // 站内信
   goMessages() {
+    if (!auth.checkLogin()) {
+      auth.requireLogin();
+      return;
+    }
     wx.navigateTo({
       url: '/pages/message-list/message-list'
     });
   },
 
-  // 会员权益
   memberCenter() {
     wx.switchTab({
       url: '/pages/member/benefits/benefits'
     });
   },
 
-  // 退出登录
+  goGrowth() {
+    if (!auth.checkLogin()) {
+      auth.requireLogin();
+      return;
+    }
+    wx.navigateTo({ url: '/pages/growth/checkin/checkin' });
+  },
+
+  goPointsMall() {
+    if (!auth.checkLogin()) {
+      auth.requireLogin();
+      return;
+    }
+    wx.navigateTo({ url: '/pages/points/mall/mall' });
+  },
+
   logout() {
     wx.showModal({
       title: '提示',
@@ -101,9 +150,3 @@ Page({
     });
   }
 });
-
-
-
-
-
-

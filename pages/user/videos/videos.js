@@ -17,6 +17,7 @@ Page({
     hasMore: true,
     loading: false,
     statusFilter: '',
+    editPool: null,
     statusTabs: [
       { key: '', label: '全部' },
       { key: 'approved', label: '审核通过' },
@@ -30,13 +31,23 @@ Page({
       auth.requireLogin();
       return;
     }
+    this.loadEditPool();
     this.loadList();
   },
 
   onShow() {
+    if (auth.checkLogin()) {
+      this.loadEditPool();
+    }
     if (this.data.list.length > 0) {
       this.refreshList();
     }
+  },
+
+  loadEditPool() {
+    api.getContentEditPool().then((pool) => {
+      this.setData({ editPool: pool });
+    }).catch(() => {});
   },
 
   onStatusTab(e) {
@@ -68,11 +79,17 @@ Page({
         const filtered = statusNorm && ['approved', 'rejected', 'pending'].includes(statusNorm)
           ? rawList.filter(p => norm(p.status) === statusNorm)
           : rawList;
-        const items = filtered.map(p => ({
-          ...p,
-          status: norm(p.status) || p.status || 'pending',
-          statusText: STATUS_MAP[norm(p.status) || p.status] || '待审核'
-        }));
+        const items = filtered.map(p => {
+          const status = norm(p.status) || p.status || 'pending';
+          const timeMeta = util.getProjectTimeMeta({ ...p, status });
+          return {
+            ...p,
+            status,
+            statusText: STATUS_MAP[status] || '待审核',
+            timeLabel: timeMeta.timeLabel,
+            timeDisplay: timeMeta.timeDisplay
+          };
+        });
         this.setData({
           list: isFilterChange ? items : [...this.data.list, ...items],
           page: page + 1,
@@ -111,5 +128,25 @@ Page({
     wx.switchTab({ url: '/pages/publish/publish' });
   },
 
-  formatTime: util.formatRelativeTime
+  onContentEdit(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    const pool = this.data.editPool;
+    if (pool && !pool.canApply) {
+      wx.showToast({ title: pool.quotaRemain <= 0 ? '改稿额度已用完' : '暂不可改稿', icon: 'none' });
+      return;
+    }
+    wx.setStorageSync('editingProjectId', String(id));
+    wx.setStorageSync('contentEditMode', '1');
+    wx.switchTab({ url: '/pages/publish/publish' });
+  },
+
+  onUseCoupon(e) {
+    const projectId = e.currentTarget.dataset.id;
+    if (!projectId) return;
+    wx.navigateTo({
+      url: '/pages/points/coupons/coupons?projectId=' + projectId
+    });
+  },
+
 });

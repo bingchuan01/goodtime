@@ -10,7 +10,7 @@ router.get('/:key', (req, res) => {
     const row = db.prepare('SELECT value FROM config WHERE key = ?').get(key);
     if (!row) return res.json({ code: 0, data: null, message: 'ok' });
     let value = row.value;
-    if (key === 'dashboard' || key === 'benefits_carousel') {
+    if (key === 'dashboard' || key === 'benefits_carousel' || key === 'home_carousel' || key === 'member_plans' || key === 'member_trial') {
       try {
         value = JSON.parse(value);
       } catch (e) {}

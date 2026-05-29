@@ -9,11 +9,11 @@
       <view class="member-info">
         <view class="avatar-section">
           <image class="avatar" src="{{userInfo.avatar_url || '/assets/images/default-avatar.png'}}" mode="aspectFill"></image>
-          <member-badge level="{{userInfo.member_level || 0}}" size="normal"></member-badge>
+          <member-badge level="{{userInfo.member_level || userInfo.memberLevel || ''}}" size="normal"></member-badge>
         </view>
         <view class="info-text">
           <view class="nickname">{{userInfo.nickname || '未登录'}}</view>
-          <view class="member-status" wx:if="{{userInfo.member_level > 0}}">
+          <view class="member-status" wx:if="{{isPaidMember}}">
             <text>会员有效期至: {{memberInfo.expire_time || '永久'}}</text>
           </view>
           <view class="member-status" wx:else>
@@ -53,7 +53,7 @@
   <!-- 升级会员 -->
   <view class="section">
     <button class="upgrade-btn" bindtap="goUpgrade">
-      {{userInfo.member_level > 0 ? '续费/升级会员' : '立即开通会员'}}
+      {{isPaidMember ? '续费/升级会员' : '立即开通会员'}}
     </button>
   </view>
 </scroll-view>

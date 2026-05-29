@@ -1,0 +1,40 @@
+.page {
+  height: 100vh;
+  background: #f5f5f5;
+  padding: 16rpx 24rpx;
+  box-sizing: border-box;
+}
+
+.row {
+  background: #fff;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  margin-bottom: 12rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.action {
+  font-size: 28rpx;
+  display: block;
+}
+
+.time {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 8rpx;
+  display: block;
+}
+
+.delta {
+  color: #FF6B35;
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.empty {
+  text-align: center;
+  color: #999;
+  padding: 80rpx 0;
+}

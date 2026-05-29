@@ -1,7 +1,16 @@
 <!--项目发布页-->
 <navigation-bar title="选择发布类型" back="{{true}}" color="black" background="#FFF"></navigation-bar>
 
-<scroll-view class="container" scroll-y="true">
+<view class="blocked-hint" wx:if="{{!publishAccessOk}}">
+  <text class="blocked-text">登录并开通会员或体验卡后可发布项目</text>
+</view>
+
+<scroll-view class="container" scroll-y="true" wx:if="{{publishAccessOk}}">
+  <view class="eligibility-banner" wx:if="{{publishEligibility}}">
+    <text wx:if="{{publishEligibility.canPublish}}">已用 {{publishEligibility.publishCountUsed}}/{{publishEligibility.lifetimeLimit}} 次发布额度</text>
+    <text wx:else>{{publishEligibility.reason}}</text>
+    <text wx:if="{{publishEligibility.nextAvailableAt && !publishEligibility.canPublish}}" class="eligibility-sub">下次可发布：{{publishEligibility.nextAvailableAt}}</text>
+  </view>
   <!-- 发布类型选择 -->
   <view class="publish-type-tabs">
     <view 
