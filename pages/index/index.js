@@ -23,15 +23,15 @@ Page({
     projectList: [],
     projectColumns: [[], []],
     page: 1,
-    pageSize: 10,
+    pageSize: 20,
     hasMore: true,
     loading: false,
     refreshing: false,
-    loadError: false,
-    surgeFeaturedList: []
+    loadError: false
   },
 
   onLoad() {
+    this._projectsBootstrapped = false;
     wx.setNavigationBarColor({ frontColor: '#ffffff', backgroundColor: '#1a1a24' });
     try {
       const app = getApp();
@@ -48,8 +48,7 @@ Page({
     this.loadCategories();
     this.loadDashboard();
     this.loadHomeCarousel();
-    this.loadSurgeFeatured();
-    this.loadProjects();
+    this.loadProjects(true);
   },
 
   onShow() {
@@ -62,6 +61,9 @@ Page({
       this._deferDashboardIntro = false;
     }
     this._scheduleTryConsumeDashboardIntro();
+    if (this._projectsBootstrapped && !this.data.loading && this.data.projectList.length === 0 && !this.data.loadError) {
+      this.loadProjects(true);
+    }
   },
 
   onHide() {
@@ -340,44 +342,54 @@ Page({
     }
   },
 
-  async loadSurgeFeatured() {
-    try {
-      const res = await api.getProjectList({ featuredSurge: '1', page: 1, pageSize: 10 });
-      const list = res && res.list ? res.list : [];
-      this.setData({ surgeFeaturedList: list });
-    } catch (e) {
-      this.setData({ surgeFeaturedList: [] });
-    }
+  _buildProjectColumns(list) {
+    const columns = [[], []];
+    (list || []).forEach((project, index) => {
+      columns[index % 2].push(project);
+    });
+    return columns;
   },
 
-  async loadProjects() {
-    if (this.data.loading || !this.data.hasMore) return;
+  _buildListQuery(categoryId) {
+    const cid = categoryId || this.data.currentCategoryId;
+    const isZone = ['hot', 'trend', 'new'].includes(cid);
+    const query = {
+      pageSize: this.data.pageSize
+    };
+    if (isZone) {
+      query.displayZone = cid;
+    } else {
+      query.categoryId = cid;
+    }
+    return query;
+  },
+
+  async loadProjects(force) {
+    if (!force && (this.data.loading || !this.data.hasMore)) return;
+    this._loadSeq = (this._loadSeq || 0) + 1;
+    const seq = this._loadSeq;
+    const page = force ? 1 : this.data.page;
     this.setData({ loading: true, loadError: false });
     try {
-      const cid = this.data.currentCategoryId;
-      const isZone = ['hot', 'trend', 'new'].includes(cid);
       const res = await api.getProjectList({
-        page: this.data.page,
-        pageSize: this.data.pageSize,
-        categoryId: isZone ? '' : cid,
-        displayZone: isZone ? cid : ''
+        page,
+        ...this._buildListQuery()
       });
+      if (seq !== this._loadSeq) return;
       const list = res && res.list ? res.list : [];
       const hasMore = res && res.hasMore !== false;
-      const newColumns = [[...this.data.projectColumns[0]], [...this.data.projectColumns[1]]];
-      list.forEach((project, index) => {
-        const columnIndex = (this.data.projectList.length + index) % 2;
-        newColumns[columnIndex].push(project);
-      });
+      const projectList = (force || page <= 1) ? list : [...this.data.projectList, ...list];
+      this._projectsBootstrapped = true;
       this.setData({
-        projectList: [...this.data.projectList, ...list],
-        projectColumns: newColumns,
-        page: this.data.page + 1,
+        projectList,
+        projectColumns: this._buildProjectColumns(projectList),
+        page: page + 1,
         hasMore,
         loading: false,
         loadError: false
       });
     } catch (e) {
+      if (seq !== this._loadSeq) return;
       this.setData({ loading: false, loadError: true });
     }
   },
@@ -389,8 +401,9 @@ Page({
       projectColumns: [[], []],
       hasMore: true,
       loadError: false
+    }, () => {
+      this.loadProjects(true);
     });
-    this.loadProjects();
   },
 
   onRefresh() {
@@ -403,9 +416,8 @@ Page({
       loadError: false
     });
     this.loadHomeCarousel();
-    this.loadSurgeFeatured();
     setTimeout(() => {
-      this.loadProjects();
+      this.loadProjects(true);
       this.setData({ refreshing: false });
     }, 800);
   },
@@ -420,24 +432,23 @@ Page({
 
   onCategoryChange(e) {
     const { categoryId } = e.detail;
+    if (categoryId === this.data.currentCategoryId) return;
     this.setData({
       currentCategoryId: categoryId,
       page: 1,
       projectList: [],
       projectColumns: [[], []],
-      hasMore: true
+      hasMore: true,
+      loadError: false
+    }, () => {
+      this.loadProjects(true);
     });
-    this.loadProjects();
   },
 
   onSearch() {
     wx.navigateTo({
       url: '/pages/search/search'
     });
-  },
-
-  onSurgeMore() {
-    wx.navigateTo({ url: '/pages/category/top50/top50' });
   },
 
   onLocationChange() {

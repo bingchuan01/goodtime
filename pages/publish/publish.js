@@ -4,6 +4,7 @@ const auth = require('../../utils/auth');
 const member = require('../../utils/member');
 const util = require('../../utils/util');
 const categoriesUtil = require('../../utils/categories');
+const categoryNav = require('../../utils/categoryNav');
 
 Page({
   data: {
@@ -27,8 +28,10 @@ Page({
     // 表单数据
     title: '',
     introduction: '', // 介绍
-    categoryTag: '', // 项目分类标签
-    categoryTagId: '', // 分类ID
+    categoryTag: '', // 提交给后端的 category_tag
+    categoryTagId: '', // 提交给后端的 category_id
+    displayZone: '',
+    categoryLabel: '', // 表单展示文案
     storeCount: '', // 门店数
     ipAddress: '', // IP地址（城市）
     baseAmount: '', // 合作金额-基本额
@@ -47,11 +50,13 @@ Page({
     publishEligibility: null,
 
     // UI状态
-    showCategoryPicker: false, // 显示分类选择器
+    showCategoryPicker: false,
     uploading: false,
-    
-    // 项目分类列表（从后台拉取，失败用默认）
-    categoryList: categoriesUtil.DEFAULT_CATEGORIES.map(c => ({ id: c.id, name: c.name }))
+
+    l1List: [],
+    selectedL1Id: '',
+    selectedL2Name: '',
+    l2List: []
   },
 
   async onShow() {
@@ -140,14 +145,35 @@ Page({
       const res = await api.getCategories();
       const list = Array.isArray(res) ? res : (res?.list || res?.data || []);
       const normalized = categoriesUtil.normalizeList(list);
+      const first = normalized[0];
       this.setData({
-        categoryList: normalized.map(c => ({ id: c.id, name: c.name }))
+        l1List: normalized,
+        selectedL1Id: first ? first.id : '',
+        l2List: first ? categoryNav.getL2ByL1(first.id) : []
       });
     } catch (e) {
+      const fallback = categoriesUtil.DEFAULT_CATEGORIES;
+      const first = fallback[0];
       this.setData({
-        categoryList: categoriesUtil.DEFAULT_CATEGORIES.map(c => ({ id: c.id, name: c.name }))
+        l1List: fallback,
+        selectedL1Id: first ? first.id : '',
+        l2List: first ? categoryNav.getL2ByL1(first.id) : []
       });
     }
+  },
+
+  _applyCategorySelection(l1Id, l2) {
+    const payload = categoryNav.buildPublishPayloadFromL2(l1Id, l2);
+    if (!payload) return;
+    const l1 = categoryNav.getL1Meta(l1Id);
+    const label = l1 && l2 && !l1.noL2 ? `${l1.name} · ${payload.label}` : payload.label;
+    this.setData({
+      categoryTagId: payload.categoryId,
+      categoryTag: payload.categoryTag,
+      displayZone: payload.displayZone,
+      categoryLabel: label,
+      selectedL2Name: l2 ? l2.name : ''
+    });
   },
 
   /** 加载被退回的项目用于编辑（从「我的发布」带 editingProjectId 进入时调用） */
@@ -170,6 +196,8 @@ Page({
         introduction: d.introduction || '',
         categoryTag: d.categoryTag || d.category_tag || '',
         categoryTagId: (d.categoryId || d.category_id || '').toString(),
+        displayZone: d.displayZone || d.display_zone || '',
+        categoryLabel: d.categoryTag || d.category_tag || d.categoryId || d.category_id || '',
         storeCount: String(d.storeCount || d.store_count || ''),
         ipAddress: d.ipAddress || d.ip_address || '',
         baseAmount: String(d.baseAmount || d.base_amount || ''),
@@ -384,45 +412,60 @@ Page({
     });
   },
 
-  // 选择项目分类标签
   chooseCategory() {
-    this.setData({
-      showCategoryPicker: true
-    });
-  },
-
-  // 关闭分类选择器
-  closeCategoryPicker() {
-    this.setData({
-      showCategoryPicker: false
-    });
-  },
-
-  // 确认选择分类
-  confirmCategory(e) {
-    const categoryId = e.currentTarget.dataset.id;
-    const category = this.data.categoryList.find(item => item.id === categoryId);
-    if (category) {
-      this.setData({
-        categoryTag: category.name,
-        categoryTagId: category.id,
-        showCategoryPicker: false
+    const { selectedL1Id, l1List, categoryTagId, displayZone } = this.data;
+    let l1Id = selectedL1Id || (l1List[0] && l1List[0].id) || 'hot';
+    if (categoryTagId || displayZone) {
+      const matched = l1List.find((item) => {
+        const meta = categoryNav.getL1Meta(item.id);
+        if (!meta) return false;
+        if (meta.noL2) return displayZone === meta.zoneId;
+        if (meta.type === 'zone') return displayZone === meta.zoneId;
+        return categoryTagId === meta.id;
       });
+      if (matched) l1Id = matched.id;
     }
+    this.setData({
+      showCategoryPicker: true,
+      selectedL1Id: l1Id,
+      l2List: categoryNav.getL2ByL1(l1Id)
+    });
   },
 
-  // 完成选择分类（点击完成按钮）
-  finishCategorySelect() {
-    if (!this.data.categoryTagId) {
-      wx.showToast({
-        title: '请选择分类',
-        icon: 'none'
-      });
+  closeCategoryPicker() {
+    this.setData({ showCategoryPicker: false });
+  },
+
+  onPickerL1Tap(e) {
+    const id = e.currentTarget.dataset.id;
+    const item = this.data.l1List.find((i) => i.id === id);
+    if (!item) return;
+    const meta = categoryNav.getL1Meta(id);
+    if (meta && meta.noL2) {
+      this._applyCategorySelection(id, null);
+      this.setData({ showCategoryPicker: false, selectedL1Id: id, l2List: [] });
       return;
     }
     this.setData({
-      showCategoryPicker: false
+      selectedL1Id: id,
+      l2List: categoryNav.getL2ByL1(id)
     });
+  },
+
+  onPickerL2Tap(e) {
+    const index = e.currentTarget.dataset.index;
+    const l2 = this.data.l2List[index];
+    if (!l2) return;
+    this._applyCategorySelection(this.data.selectedL1Id, l2);
+    this.setData({ showCategoryPicker: false });
+  },
+
+  finishCategorySelect() {
+    if (!this.data.categoryTagId && !this.data.displayZone) {
+      wx.showToast({ title: '请选择分类', icon: 'none' });
+      return;
+    }
+    this.setData({ showCategoryPicker: false });
   },
 
   // 表单输入
@@ -679,7 +722,7 @@ Page({
     }
 
     // 验证项目分类标签
-    if (!this.data.categoryTag) {
+    if (!this.data.categoryTagId && !this.data.displayZone) {
       wx.showToast({
         title: '请选择项目分类标签',
         icon: 'none'
@@ -854,6 +897,7 @@ Page({
         maxAmount: String(this.data.maxAmount),
         categoryId: this.data.categoryTagId || '',
         categoryTag: this.data.categoryTag || '',
+        displayZone: this.data.displayZone || '',
         coverType,
         carouselImages: carouselUrls,
         videoUrl,

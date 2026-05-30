@@ -167,8 +167,8 @@
       <text>项目分类标签</text>
     </view>
     <view class="category-selector" bindtap="chooseCategory">
-      <view wx:if="{{categoryTag}}" class="category-tag-selected">
-        <text>{{categoryTag}}</text>
+      <view wx:if="{{categoryLabel}}" class="category-tag-selected">
+        <text>{{categoryLabel}}</text>
       </view>
       <view wx:else class="category-placeholder">
         <text>请选择项目分类</text>
@@ -298,27 +298,41 @@
   </button>
 </view>
 
-<!-- 项目分类选择器弹窗 -->
+<!-- 项目分类选择器弹窗（左 L1 / 右 L2） -->
 <view wx:if="{{showCategoryPicker}}" class="category-picker-modal" bindtap="closeCategoryPicker">
   <view class="category-picker-content" catchtap="">
-    <!-- 弹窗头部 -->
     <view class="picker-header">
       <text class="picker-cancel" bindtap="closeCategoryPicker">取消</text>
       <text class="picker-title">选择分类</text>
-      <text class="picker-confirm" bindtap="closeCategoryPicker">完成</text>
+      <text class="picker-confirm" bindtap="finishCategorySelect">完成</text>
     </view>
-    
-    <!-- 分类列表 -->
-    <scroll-view class="picker-list" scroll-y="true">
-      <view 
-        class="picker-item {{categoryTagId === item.id ? 'selected' : ''}}"
-        wx:for="{{categoryList}}"
-        wx:key="id"
-        data-id="{{item.id}}"
-        bindtap="confirmCategory"
-      >
-        <text>{{item.name}}</text>
-      </view>
-    </scroll-view>
+    <view class="picker-dual">
+      <scroll-view class="picker-left" scroll-y="true">
+        <view
+          class="picker-l1-item {{selectedL1Id === item.id ? 'selected' : ''}}"
+          wx:for="{{l1List}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="onPickerL1Tap"
+        >
+          <text>{{item.name}}</text>
+        </view>
+      </scroll-view>
+      <scroll-view class="picker-right" scroll-y="true">
+        <view wx:if="{{l2List.length}}">
+          <view
+            class="picker-l2-item {{selectedL2Name === item.name ? 'selected' : ''}}"
+            wx:for="{{l2List}}"
+            wx:key="name"
+            data-index="{{index}}"
+            bindtap="onPickerL2Tap"
+          >{{item.name}}</view>
+        </view>
+        <view class="picker-l2-empty" wx:else>
+          <text wx:if="{{selectedL1Id === 'new'}}">品牌上新无需二级分类，点左侧即可选中</text>
+          <text wx:else>请选择左侧分类</text>
+        </view>
+      </scroll-view>
+    </view>
   </view>
 </view>

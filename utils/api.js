@@ -399,19 +399,17 @@ function getProjectList(params = {}) {
     priceMin,
     priceMax
   } = params;
-  return get('/projects', {
-    page,
-    pageSize,
-    categoryId,
-    displayZone,
-    categoryTag,
-    inSurgePool,
-    featuredSurge,
-    priceRange,
-    region,
-    priceMin,
-    priceMax
-  }, {}, true);
+  const query = { page, pageSize };
+  if (categoryId) query.categoryId = categoryId;
+  if (displayZone) query.displayZone = displayZone;
+  if (categoryTag) query.categoryTag = categoryTag;
+  if (inSurgePool) query.inSurgePool = inSurgePool;
+  if (featuredSurge) query.featuredSurge = featuredSurge;
+  if (priceRange) query.priceRange = priceRange;
+  if (region) query.region = region;
+  if (priceMin != null) query.priceMin = priceMin;
+  if (priceMax != null) query.priceMax = priceMax;
+  return get('/projects', query, {}, true);
 }
 
 function getSurgePool() {

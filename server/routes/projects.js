@@ -19,7 +19,7 @@ const {
   currentPoolMonth,
   hasSurgeTag
 } = require('../lib/surge-pool');
-const { GROUPS, PRICE_RANGES } = require('../lib/category-nav-data');
+const { L1_META, L2_BY_L1, PRICE_RANGES, getFilterTypeOptions } = require('../lib/category-nav-data');
 
 function parseAmount(val) {
   const n = parseFloat(String(val || '').replace(/[^\d.]/g, ''));
@@ -125,7 +125,16 @@ function fetchProjectsByIds(ids) {
 
 /** 分类导航结构 */
 router.get('/nav', (req, res) => {
-  res.json({ code: 0, data: { groups: GROUPS, priceRanges: PRICE_RANGES }, message: 'ok' });
+  res.json({
+    code: 0,
+    data: {
+      l1Meta: L1_META,
+      l2ByL1: L2_BY_L1,
+      filterTypes: getFilterTypeOptions(),
+      priceRanges: PRICE_RANGES
+    },
+    message: 'ok'
+  });
 });
 
 /** 当月飙升池（Top50） */
@@ -323,8 +332,8 @@ router.post('/', (req, res) => {
     }
 
     const runResult = db.prepare(`
-      INSERT INTO projects (user_id, title, ip_address, store_count, base_amount, max_amount, category_id, category_tag, cover_type, carousel_images, video_url, video_poster, detail_content, introduction, member_level, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+      INSERT INTO projects (user_id, title, ip_address, store_count, base_amount, max_amount, category_id, category_tag, display_zone, cover_type, carousel_images, video_url, video_poster, detail_content, introduction, member_level, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     `).run(
       userId,
       title,
@@ -334,6 +343,7 @@ router.post('/', (req, res) => {
       String(body.maxAmount || body.max_amount || '').trim(),
       String(body.categoryId || body.category_id || '').trim(),
       String(body.categoryTag || body.category_tag || '').trim(),
+      String(body.displayZone || body.display_zone || '').trim(),
       coverType,
       carouselImages,
       String(body.videoUrl || body.video_url || '').trim(),
@@ -407,7 +417,7 @@ router.put('/:id', (req, res) => {
     }
 
     db.prepare(`
-      UPDATE projects SET title = ?, ip_address = ?, store_count = ?, base_amount = ?, max_amount = ?, category_id = ?, category_tag = ?, cover_type = ?, carousel_images = ?, video_url = ?, video_poster = ?, detail_content = ?, introduction = ?, status = 'pending', reject_reason = '', updated_at = datetime('now', 'localtime')
+      UPDATE projects SET title = ?, ip_address = ?, store_count = ?, base_amount = ?, max_amount = ?, category_id = ?, category_tag = ?, display_zone = ?, cover_type = ?, carousel_images = ?, video_url = ?, video_poster = ?, detail_content = ?, introduction = ?, status = 'pending', reject_reason = '', updated_at = datetime('now', 'localtime')
       WHERE id = ?
     `).run(
       title,
@@ -417,6 +427,7 @@ router.put('/:id', (req, res) => {
       String(body.maxAmount || body.max_amount || p.max_amount || '').trim(),
       String(body.categoryId || body.category_id || p.category_id || '').trim(),
       String(body.categoryTag || body.category_tag || p.category_tag || '').trim(),
+      String(body.displayZone || body.display_zone || p.display_zone || '').trim(),
       body.coverType || p.cover_type,
       carouselImages,
       String(body.videoUrl || body.video_url || p.video_url || '').trim(),
