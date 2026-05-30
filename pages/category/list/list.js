@@ -1,4 +1,5 @@
 const api = require('../../../utils/api');
+const categoryNav = require('../../../utils/categoryNav');
 
 const DEFAULT_PRICE_RANGES = [
   { id: '1-5', label: '1～5万' },
@@ -12,47 +13,98 @@ Page({
   data: {
     pageTitle: '项目列表',
     projectList: [],
+    l2Sections: [],
+    groupByL2: false,
     page: 1,
     pageSize: 10,
     hasMore: true,
     loading: false,
     loadError: false,
     filters: {
-      top50: false,
+      typeKey: '',
+      typeLabel: '',
       priceRange: '',
       region: ''
     },
     priceRanges: DEFAULT_PRICE_RANGES,
     showFilterPanel: false,
-    regionInput: ''
+    regionInput: '',
+    fromAllFilter: false,
+    filterTypes: [],
+    activeFilterTags: []
   },
 
   onLoad(options) {
-    this.loadPriceRanges();
+    this.loadNavMeta();
     const title = options.title ? decodeURIComponent(options.title) : '项目列表';
-    const top50 = options.top50 === '1';
+    const fromFilter = options.fromFilter === '1';
+    const priceRange = options.priceRange ? decodeURIComponent(options.priceRange) : '';
+    const region = options.region ? decodeURIComponent(options.region) : '';
+    const typeLabel = options.typeLabel ? decodeURIComponent(options.typeLabel) : '';
+    const priceLabel = options.priceLabel ? decodeURIComponent(options.priceLabel) : '';
+    const l1Id = options.l1Id ? decodeURIComponent(options.l1Id) : '';
+    const l1Meta = l1Id ? categoryNav.getL1Meta(l1Id) : null;
+    const l2Count = l1Id ? (categoryNav.L2_BY_L1[l1Id] || []).length : 0;
+    this._l1Id = l1Id;
+    this._groupByL2 = !!(l1Id && l1Meta && !l1Meta.noL2 && l2Count > 0);
     this._query = {
       categoryId: options.categoryId ? decodeURIComponent(options.categoryId) : '',
       categoryTag: options.categoryTag ? decodeURIComponent(options.categoryTag) : '',
       displayZone: options.displayZone ? decodeURIComponent(options.displayZone) : '',
-      inSurgePool: top50 ? '1' : (options.inSurgePool === '1' ? '1' : '')
+      inSurgePool: options.inSurgePool === '1' ? '1' : ''
     };
+    const activeFilterTags = [];
+    if (fromFilter) {
+      if (typeLabel) {
+        activeFilterTags.push({ key: 'type', label: typeLabel });
+      }
+      if (priceRange) {
+        const pr = DEFAULT_PRICE_RANGES.find((r) => r.id === priceRange);
+        activeFilterTags.push({ key: 'price', label: priceLabel || (pr ? pr.label : priceRange) });
+      }
+      if (region) {
+        activeFilterTags.push({ key: 'region', label: region });
+      }
+    }
     this.setData({
-      pageTitle: top50 ? 'Top50强' : title,
-      'filters.top50': top50
+      pageTitle: title,
+      fromAllFilter: fromFilter,
+      groupByL2: this._groupByL2,
+      pageSize: this._groupByL2 ? 50 : 10,
+      'filters.priceRange': priceRange,
+      'filters.region': region,
+      regionInput: region,
+      activeFilterTags
     });
     this.loadProjects(true);
   },
 
-  async loadPriceRanges() {
+  async loadNavMeta() {
     try {
       const data = await api.getCategoryNav();
-      if (data && data.priceRanges && data.priceRanges.length) {
-        this.setData({ priceRanges: data.priceRanges });
-      }
+      const merged = categoryNav.mergeNavFromApi(data);
+      this.setData({
+        filterTypes: merged.filterTypes,
+        priceRanges: merged.priceRanges
+      });
     } catch (e) {
-      /* use default */
+      /* use defaults */
     }
+  },
+
+  _applyGroupedView(list, reset) {
+    if (!this._groupByL2 || !this._l1Id) {
+      this.setData({
+        projectList: reset ? list : [...this.data.projectList, ...list],
+        l2Sections: []
+      });
+      return;
+    }
+    const all = reset ? list : [...this.data.projectList, ...list];
+    this.setData({
+      projectList: all,
+      l2Sections: categoryNav.groupProjectsByL2(all, this._l1Id)
+    });
   },
 
   async loadProjects(reset) {
@@ -67,15 +119,14 @@ Page({
         pageSize: this.data.pageSize,
         ...this._query
       };
-      if (filters.top50) params.inSurgePool = '1';
       if (filters.priceRange) params.priceRange = filters.priceRange;
       if (filters.region) params.region = filters.region;
 
       const res = await api.getProjectList(params);
       const list = res && res.list ? res.list : [];
       const hasMore = res && res.hasMore !== false;
+      this._applyGroupedView(list, reset);
       this.setData({
-        projectList: reset ? list : [...this.data.projectList, ...list],
         page: page + 1,
         hasMore,
         loading: false,
@@ -95,6 +146,10 @@ Page({
   },
 
   toggleFilter() {
+    if (this.data.fromAllFilter) {
+      wx.navigateBack();
+      return;
+    }
     this.setData({ showFilterPanel: !this.data.showFilterPanel });
   },
 
@@ -108,25 +163,39 @@ Page({
     this.setData({ 'filters.priceRange': cur === id ? '' : id });
   },
 
-  onTop50FilterTap() {
-    this.setData({ 'filters.top50': !this.data.filters.top50 });
+  onFilterTypeTap(e) {
+    const key = e.currentTarget.dataset.key;
+    const item = this.data.filterTypes.find((t) => t.key === key);
+    if (!item) return;
+    const cur = this.data.filters.typeKey;
+    if (cur === key) {
+      this._query.categoryId = '';
+      this._query.categoryTag = '';
+      this._query.displayZone = '';
+      this.setData({ 'filters.typeKey': '', 'filters.typeLabel': '' });
+    } else {
+      this._query.categoryId = item.categoryId || '';
+      this._query.categoryTag = '';
+      this._query.displayZone = item.displayZone || '';
+      this.setData({ 'filters.typeKey': key, 'filters.typeLabel': item.label });
+    }
   },
 
   applyFilters() {
-    this.setData({
-      'filters.region': (this.data.regionInput || '').trim(),
-      showFilterPanel: false
-    });
+    const region = (this.data.regionInput || '').trim();
+    this.setData({ 'filters.region': region, showFilterPanel: false });
     this.loadProjects(true);
   },
 
   resetFilters() {
+    this._query.categoryId = '';
+    this._query.categoryTag = '';
+    this._query.displayZone = '';
     this.setData({
-      filters: { top50: false, priceRange: '', region: '' },
+      filters: { typeKey: '', typeLabel: '', priceRange: '', region: '' },
       regionInput: '',
       showFilterPanel: false
     });
-    this._query.inSurgePool = '';
     this.loadProjects(true);
   },
 

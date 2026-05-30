@@ -10,6 +10,10 @@ Component({
     currentCategoryId: {
       type: String,
       value: ''
+    },
+    allEntryLabel: {
+      type: String,
+      value: '全部项目'
     }
   },
   data: {
@@ -47,6 +51,9 @@ Component({
         categoryId: id,
         category: this.data.displayList[index]
       });
+    },
+    onAllProjectsTap() {
+      this.triggerEvent('alltap', { categoryId: ALL_ENTRY_ID });
     },
     onIconError(e) {
       const index = e.currentTarget.dataset.index;

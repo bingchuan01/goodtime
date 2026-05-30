@@ -21,5 +21,11 @@
       </view>
       <text class="label">{{item.name}}</text>
     </view>
+    <view class="category-item all-entry" catchtap="onAllProjectsTap">
+      <view class="icon-wrapper all-entry-icon-wrap">
+        <image class="icon all-entry-icon" src="/images/icons/benefits/more.svg" mode="aspectFit"></image>
+      </view>
+      <text class="label all-entry-label">{{allEntryLabel}}</text>
+    </view>
   </view>
 </scroll-view>

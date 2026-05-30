@@ -1,43 +1,113 @@
 <navigation-bar title="全部项目" back="{{true}}" color="black" background="#FFF"></navigation-bar>
 
 <view class="page">
-  <view class="shortcut-bar">
-    <view class="shortcut-chip" bindtap="onTop50Tap">Top50强</view>
+  <view class="top-bar">
+    <view class="top-actions">
+      <view class="top-chip" bindtap="onTop50Tap">Top50强</view>
+      <view class="top-chip {{showFilterPanel ? 'top-chip-active' : ''}}" bindtap="toggleFilter">筛选</view>
+    </view>
+    <scroll-view class="active-tags" scroll-x enable-flex wx:if="{{activeFilters.length && !showFilterPanel}}">
+      <view class="active-tags-track">
+        <view
+          class="summary-chip"
+          wx:for="{{activeFilters}}"
+          wx:key="key"
+          data-key="{{item.key}}"
+          bindtap="removeActiveFilter"
+        >
+          <text class="summary-chip-text">{{item.label}}</text>
+          <text class="summary-chip-x">×</text>
+        </view>
+      </view>
+    </scroll-view>
   </view>
 
-  <view class="main">
-    <scroll-view class="left-panel" scroll-y>
-      <view
-        wx:for="{{leftNav}}"
-        wx:key="key"
-        class="left-item {{selectedKey === item.key ? 'active' : ''}}"
-        data-key="{{item.key}}"
-        bindtap="onLeftTap"
-      >
-        <text class="left-group" wx:if="{{item.groupName}}">{{item.groupName}}</text>
-        <text class="left-label">{{item.label}}</text>
-      </view>
-    </scroll-view>
-
-    <scroll-view class="right-panel" scroll-y>
-      <view wx:if="{{selectedItem && !selectedItem.directZone}}" class="right-inner">
-        <view class="right-header">
-          <text class="right-title">{{selectedItem.label}}</text>
-          <text class="browse-all" bindtap="onBrowseAll">查看全部</text>
-        </view>
-        <view class="tag-grid" wx:if="{{rightTags.length}}">
+  <view class="filter-dropdown {{showFilterPanel ? 'is-open' : ''}}">
+    <view class="filter-panel">
+      <view class="filter-section">
+        <text class="filter-label">项目类型</text>
+        <view class="chip-row">
           <view
-            wx:for="{{rightTags}}"
-            wx:key="*this"
-            class="tag-chip"
-            data-tag="{{item}}"
-            bindtap="onTagTap"
-          >{{item}}</view>
-        </view>
-        <view class="empty-tags" wx:else>
-          <text>暂无二级标签，可查看全部项目</text>
+            wx:for="{{filterL1Options}}"
+            wx:key="key"
+            class="filter-chip {{filterDraft.typeKey === item.key ? 'active' : ''}}"
+            data-key="{{item.key}}"
+            bindtap="onFilterL1Tap"
+          >{{item.label}}</view>
         </view>
       </view>
-    </scroll-view>
+      <view class="filter-section">
+        <text class="filter-label">价格区间</text>
+        <view class="chip-row">
+          <view
+            wx:for="{{priceRanges}}"
+            wx:key="id"
+            class="filter-chip {{filterDraft.priceRange === item.id ? 'active' : ''}}"
+            data-id="{{item.id}}"
+            data-label="{{item.label}}"
+            bindtap="onPriceTap"
+          >{{item.label}}</view>
+        </view>
+      </view>
+      <view class="filter-section">
+        <text class="filter-label">选择城市</text>
+        <view class="region-field">
+          <image class="region-field-icon" src="/images/icons/location-pin.svg" mode="aspectFit" />
+          <input
+            class="region-input"
+            placeholder="请输入项目所在地址/城市名称"
+            placeholder-class="region-placeholder"
+            value="{{regionInput}}"
+            bindinput="onRegionInput"
+          />
+        </view>
+      </view>
+      <view class="filter-actions">
+        <view class="btn-reset" bindtap="resetFilterDraft">重置</view>
+        <view class="btn-apply" bindtap="applyFilter">确定</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="body-wrap">
+    <view class="filter-mask" wx:if="{{showFilterPanel}}" bindtap="closeFilter"></view>
+    <view class="main">
+      <scroll-view class="left-panel" scroll-y enhanced show-scrollbar="{{false}}">
+        <view class="left-panel-inner">
+          <view
+            wx:for="{{l1List}}"
+            wx:key="id"
+            class="left-item {{selectedL1Id === item.id ? 'active' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="onL1Tap"
+          >
+            <view class="left-icon-wrap">
+              <image class="left-icon" src="{{item.icon}}" mode="aspectFit"></image>
+            </view>
+            <text class="left-label">{{item.name}}</text>
+          </view>
+        </view>
+      </scroll-view>
+
+      <scroll-view class="right-panel" scroll-y enhanced show-scrollbar="{{false}}">
+      <view class="right-inner" wx:if="{{l2List.length}}">
+        <view class="right-title-bar">
+          <text class="right-title">{{selectedL1Name}}</text>
+        </view>
+        <view class="l2-grid">
+          <view
+            class="l2-chip"
+            wx:for="{{l2List}}"
+            wx:key="name"
+            data-index="{{index}}"
+            bindtap="onL2Tap"
+          >{{item.name}}</view>
+        </view>
+      </view>
+      <view class="empty-l2" wx:else>
+        <text>请选择左侧分类</text>
+      </view>
+      </scroll-view>
+    </view>
   </view>
 </view>

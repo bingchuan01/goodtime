@@ -62,3 +62,22 @@
   color: #FF6B35;
   font-weight: bold;
 }
+
+.all-entry {
+  margin-right: 24rpx;
+}
+
+.all-entry-icon-wrap {
+  background-color: #FFF5F0;
+  border: 1px solid #ffd4c2;
+}
+
+.all-entry-icon {
+  width: 48rpx;
+  height: 48rpx;
+}
+
+.all-entry-label {
+  color: #FF6B35;
+  font-weight: 600;
+}

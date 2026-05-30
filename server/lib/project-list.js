@@ -70,6 +70,7 @@ function enrichListRow(p, surgeMap) {
       memberLevel: publisher.member_level || '',
       ip: p.ip_address || ''
     } : { id: p.user_id, nickname: '未知', avatar: '', memberLevel: '', ip: p.ip_address || '' },
+    categoryId: p.category_id || '',
     categoryTag: p.category_tag || '',
     clueCount: p.clue_count || 0,
     status: p.status,
